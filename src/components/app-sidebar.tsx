@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { NavUser } from "@/components/nav-user";
 import {
@@ -53,8 +54,10 @@ function SidebarLogo() {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user } = useUser()
-   const data = {
+  const { user } = useUser();
+  const pathname = usePathname();
+  
+  const data = {
     user: {
       name: user?.fullName || "Vitor Roverso",
       email: user?.emailAddresses[0].emailAddress || "vitorroverso40@gmail.com",
@@ -66,9 +69,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         items: [
           {
             title: "Dashboard",
-            url: "#",
+            url: "/",
             icon: RiSlowDownLine,
-            isActive: true,
           },
           {
             title: "Transações",
@@ -77,7 +79,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           },
           {
             title: "Usuários",
-            url: "#",
+            url: "/usuarios",
             icon: RiShieldUserLine,
           },
           {
@@ -112,27 +114,34 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {item.items.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      className="group/menu-button group-data-[collapsible=icon]:px-[5px]! font-medium gap-3 h-9 [&>svg]:size-auto"
-                      tooltip={item.title}
-                      isActive={item.isActive}
-                    >
-                      <a href={item.url}>
-                        {item.icon && (
-                          <item.icon
-                            className="text-muted-foreground/65 group-data-[active=true]/menu-button:text-primary"
-                            size={22}
-                            aria-hidden="true"
-                          />
-                        )}
-                        <span>{item.title}</span>
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                {item.items.map((item) => {
+                  // Verifica se o item está ativo com base na URL atual
+                  const isActive = 
+                    (item.url === "/" && pathname === "/") || 
+                    (item.url !== "/" && pathname.startsWith(item.url));
+                  
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        asChild
+                        className="group/menu-button group-data-[collapsible=icon]:px-[5px]! font-medium gap-3 h-9 [&>svg]:size-auto"
+                        tooltip={item.title}
+                        isActive={isActive}
+                      >
+                        <Link href={item.url}>
+                          {item.icon && (
+                            <item.icon
+                              className="text-muted-foreground/65 group-data-[active=true]/menu-button:text-primary"
+                              size={22}
+                              aria-hidden="true"
+                            />
+                          )}
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
