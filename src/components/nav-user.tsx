@@ -2,10 +2,8 @@
 
 import {
   RiMore2Line,
-  RiTimer2Line,
   RiUserLine,
   RiPulseLine,
-  RiFindReplaceLine,
   RiLogoutCircleLine,
 } from "@remixicon/react";
 

@@ -57,7 +57,7 @@ export function Chart05() {
   const chartData = locationData || fallbackData;
 
   // Calcular o total de eventos
-  const totalEvents = chartData.reduce((sum: any, item: { count: any; }) => sum + item.count, 0);
+  const totalEvents = chartData.reduce((sum: number, item: { count: number; }) => sum + item.count, 0);
 
   return (
     <Card className="gap-4">
@@ -160,7 +160,7 @@ export function Chart05() {
                     revenue: "Receita",
                   }}
                   dataKeys={["count", "ticketsSold", "revenue"]}
-                  valueFormatter={(value: { toLocaleString: () => any; }, dataKey: string) => 
+                  valueFormatter={(value: { toLocaleString: () => any; }, dataKey?: string) => 
                     dataKey === "revenue" 
                       ? `R$ ${value.toLocaleString()}`
                       : value.toLocaleString()

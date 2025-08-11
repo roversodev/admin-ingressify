@@ -5,8 +5,10 @@ interface CustomTooltipContentProps extends TooltipProps<number, string> {
   labelMap?: Record<string, string>;
   // Optional array to define display order
   dataKeys?: string[];
+  payload?: any;
+  label?: string;
   // Optional formatter for values
-  valueFormatter?: (value: number) => string;
+  valueFormatter?: (value: number, dataKey?: string) => string;
 }
 
 export function CustomTooltipContent({
@@ -24,7 +26,7 @@ export function CustomTooltipContent({
 
   // Create a map of payload items by dataKey for easy lookup
   const payloadMap = payload.reduce(
-    (acc, item) => {
+    (acc: { [x: string]: any; }, item: { dataKey: string; }) => {
       acc[item.dataKey as string] = item;
       return acc;
     },
@@ -43,7 +45,7 @@ export function CustomTooltipContent({
     <div className="bg-popover text-popover-foreground grid min-w-32 items-start gap-1.5 rounded-lg border px-3 py-1.5 text-xs">
       <div className="font-medium">{label}</div>
       <div className="grid gap-1.5">
-        {orderedPayload.map((entry, index) => {
+        {orderedPayload.map((entry: { dataKey: string; value: number; }, index: any) => {
           // Skip undefined entries
           if (!entry) return null;
 
@@ -67,7 +69,7 @@ export function CustomTooltipContent({
                 <span className="text-muted-foreground">{displayLabel}</span>
               </div>
               <span className="text-foreground font-mono font-medium tabular-nums">
-                {valueFormatter(value)}
+                {valueFormatter(value, name)}
               </span>
             </div>
           );

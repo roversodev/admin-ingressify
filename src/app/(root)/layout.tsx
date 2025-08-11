@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ActionButtons } from "@/components/action-buttons";
@@ -14,53 +14,46 @@ import { toast } from "sonner";
 import Spinner from "@/components/Spinner";
 import { useRouter } from "next/navigation";
 
-
-export default function RootLayout({
-  children,
-  actionButtons,
-}: Readonly<{
-  children: React.ReactNode;
-  actionButtons?: React.ReactNode;
-}>) {
-  // const { user, isLoaded } = useUser();
-  // const router = useRouter()
-  // const [isChecking, setIsChecking] = useState(true);
-  // if(!user){
-  //   router.push('/sign-in')
-  // }
+export default function AdmLayout({ children }: { children: ReactNode }){
+  const { user, isLoaded } = useUser();
+  const router = useRouter()
+  const [isChecking, setIsChecking] = useState(true);
+  if(!user){
+    router.push('/sign-in')
+  }
   
-  // // Verificar status de administrador
-  // const adminStatus = useQuery(api.admin.checkAdminStatus, 
-  //   user?.id ? { userId: user.id } : "skip"
-  // );
+  // Verificar status de administrador
+  const adminStatus = useQuery(api.admin.checkAdminStatus, 
+    user?.id ? { userId: user.id } : "skip"
+  );
 
-  // useEffect(() => {
-  //   // Aguardar o carregamento do usuário e a verificação do status de admin
-  //   if (isLoaded && adminStatus !== undefined) {
-  //     setIsChecking(false);
+  useEffect(() => {
+    // Aguardar o carregamento do usuário e a verificação do status de admin
+    if (isLoaded && adminStatus !== undefined) {
+      setIsChecking(false);
       
-  //     // Se não for admin ou não tiver permissões, redirecionar
-  //     if (!adminStatus || !adminStatus.isAdmin) {
-  //       toast.error("Você não tem permissão para acessar o painel administrativo");
-  //       window.location.href = "https://ingressify.com.br";
-  //     }
+      // Se não for admin ou não tiver permissões, redirecionar
+      if (!adminStatus || !adminStatus.isAdmin) {
+        toast.error("Você não tem permissão para acessar o painel administrativo");
+        window.location.href = "https://ingressify.com.br";
+      }
 
-  //     if (adminStatus.isAdmin) {
-  //       toast.success("Bem-vindo ao painel administrativo");
-  //     }
-  //   }
-  // }, [isLoaded, adminStatus]);
+      if (adminStatus.isAdmin) {
+        toast.success("Bem-vindo ao painel administrativo");
+      }
+    }
+  }, [isLoaded, adminStatus]);
 
-  // // Mostrar tela de carregamento enquanto verifica
-  // if (isChecking) {
-  //   return (
-  //     <Spinner />
-  //   );
-  // }
+  // Mostrar tela de carregamento enquanto verifica
+  if (isChecking) {
+    return (
+      <Spinner />
+    );
+  }
 
-  //  if (!adminStatus || !adminStatus.isAdmin) {
-  //   return null;
-  // }
+   if (!adminStatus || !adminStatus.isAdmin) {
+    return null;
+  }
 
   return (
     <SidebarProvider>
@@ -92,7 +85,6 @@ export default function RootLayout({
               </div>
               {/* Right side */}
               <ActionButtons showDefaultButtons={false}>
-                {actionButtons}
               </ActionButtons>
             </header>
             <div className="overflow-hidden">
