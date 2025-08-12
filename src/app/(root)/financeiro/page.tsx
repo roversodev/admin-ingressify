@@ -198,10 +198,10 @@ export default function FinanceiroPage() {
                                     index="name"
                                     colors={['var(--chart-1)']}
                                     valueFormatter={(value) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-                                    className="aspect-[4/3]"
+                                    className="max-h-[50vh] w-full"
                                 />
                             ) : (
-                                <Skeleton className="h-[300px] w-full" />
+                                <Skeleton className="h-[50vh] w-full" />
                             )}
                         </CardContent>
                     </Card>
@@ -222,10 +222,10 @@ export default function FinanceiroPage() {
                                     categories={['Transações']}
                                     index="name"
                                     colors={['var(--chart-1)']}
-                                    className="aspect-[4/3]"
+                                    className="max-h-[50vh] w-full"
                                 />
                             ) : (
-                                <Skeleton className="h-[300px] w-full" />
+                                <Skeleton className="h-[50vh] w-full" />
                             )}
                         </CardContent>
                     </Card>
