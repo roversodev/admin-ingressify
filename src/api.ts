@@ -1161,6 +1161,86 @@ export type PublicApiType = {
       { userId: string },
       any
     >;
+    getByTransactionIdMutation: FunctionReference<
+      "mutation",
+      "public",
+      { transactionId: string },
+      any
+    >;
+    getTicketsByTransactionIdMutation: FunctionReference<
+      "mutation",
+      "public",
+      { transactionId: string },
+      any
+    >;
+    getTicketsByEmailMutation: FunctionReference<
+      "mutation",
+      "public",
+      { email: string; eventId?: Id<"events"> },
+      any
+    >;
+    getTicketsByCpfMutation: FunctionReference<
+      "mutation",
+      "public",
+      { cpf: string; eventId?: Id<"events"> },
+      any
+    >;
+    getOrganizationTransactionsMutation: FunctionReference<
+      "mutation",
+      "public",
+      { organizationId: Id<"organizations">; userId: string },
+      any
+    >;
+    getOrganizationTransactions: FunctionReference<
+      "query",
+      "public",
+      {
+        eventId?: Id<"events">;
+        organizationId: Id<"organizations">;
+        userId: string;
+      },
+      any
+    >;
+    getPlatformFinancialMetrics: FunctionReference<
+      "query",
+      "public",
+      { endDate?: number; startDate?: number; userId: string },
+      any
+    >;
+    listAllOrganizationWithdrawals: FunctionReference<
+      "query",
+      "public",
+      {
+        limit?: number;
+        skip?: number;
+        status?:
+          | "pending"
+          | "processing"
+          | "completed"
+          | "failed"
+          | "cancelled";
+        userId: string;
+      },
+      any
+    >;
+    processWithdrawal: FunctionReference<
+      "mutation",
+      "public",
+      {
+        action: "approve" | "complete" | "reject" | "cancel";
+        adminUserId: string;
+        notes?: string;
+        receiptStorageId?: Id<"_storage">;
+        withdrawalId: Id<"organizationWithdrawals">;
+      },
+      any
+    >;
+    getWithdrawalDetails: FunctionReference<
+      "query",
+      "public",
+      { userId: string; withdrawalId: Id<"organizationWithdrawals"> },
+      any
+    >;
   };
   customers: {
     create: FunctionReference<

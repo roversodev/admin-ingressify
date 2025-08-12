@@ -13,7 +13,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/api";
 import { useUser } from "@clerk/nextjs";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card-charts";
 import {
   ChartConfig,
   ChartContainer,

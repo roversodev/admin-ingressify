@@ -23,7 +23,8 @@ import {
   RiCalendarEventLine,
   RiBankLine,
   RiCoupon3Line,
-  RiShieldUserLine
+  RiShieldUserLine,
+  RiBankCard2Line
 } from "@remixicon/react";
 import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
@@ -74,7 +75,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           },
           {
             title: "Transações",
-            url: "#",
+            url: "/transacoes",
             icon: RiLeafLine,
           },
           {
@@ -94,8 +95,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           },
           {
             title: "Financeiro",
-            url: "#",
+            url: "/financeiro",
             icon: RiBankLine,
+          },
+          {
+            title: "Saques",
+            url: "/saques",
+            icon: RiBankCard2Line,
           },
         ],
       },
