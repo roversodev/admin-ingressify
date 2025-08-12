@@ -234,17 +234,17 @@ export default function TransacoesPage() {
         const sevenDaysAfterPurchase = purchaseDate + 7 * 24 * 60 * 60 * 1000; // 7 dias em ms
         const fortyEightHoursBeforeEvent = eventStartDate - 48 * 60 * 60 * 1000; // 48 horas em ms
 
+        // Verificar se faltam menos de 48 horas para o evento
+        if (now > fortyEightHoursBeforeEvent) {
+            return { eligible: false, reason: "Faltam menos de 48 horas para o evento" };
+        }
+
         // Verificar se está dentro do período de 7 dias após a compra
         if (now <= sevenDaysAfterPurchase) {
             return { eligible: true, reason: "Dentro do período de 7 dias após a compra" };
         }
 
-        // Verificar se está a mais de 48 horas do evento
-        if (now <= fortyEightHoursBeforeEvent) {
-            return { eligible: true, reason: "Mais de 48 horas antes do evento" };
-        }
-
-        return { eligible: false, reason: "Fora do período de reembolso (7 dias após compra ou 48h antes do evento)" };
+        return { eligible: false, reason: "Mais de 7 dias após a compra" };
     };
 
     // Funções de formatação
