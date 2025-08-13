@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Ticket, Search, Filter, Eye, Download, CheckCircle, XCircle, Clock, RefreshCw, Hash, Calendar, DollarSign, User, Mail, Phone, CreditCard, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import Spinner from '@/components/Spinner';
@@ -61,6 +62,10 @@ export default function IngressosPage() {
             limit: 1000
         } : "skip"
     );
+
+    // Verificar se os dados estão carregando - CORRIGIDO
+    const isLoadingTickets = !user?.id || allTicketsData === undefined;
+    const isLoadingEvents = !user?.id || eventsData === undefined;
 
     // Filtrar ingressos localmente (incluindo busca por texto)
     const filteredTickets = (allTicketsData || []).filter((ticket: any) => {
@@ -367,58 +372,74 @@ export default function IngressosPage() {
                     </div>
                 </div>
 
-                {/* Estatísticas */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    <Card className="bg-card border-border">
-                        <CardContent className="p-4">
-                            <div className="flex items-center space-x-2">
-                                <Ticket className="w-4 h-4 text-gray-400" />
-                                <span className="text-sm text-gray-400">Total</span>
-                            </div>
-                            <p className="text-2xl font-bold text-white mt-1">{stats.total}</p>
-                        </CardContent>
-                    </Card>
+                {/* Estatísticas com Loading */}
+                {isLoadingTickets ? (
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        {[...Array(5)].map((_, i) => (
+                            <Card key={i} className="bg-card border-border">
+                                <CardContent className="p-4">
+                                    <div className="flex items-center space-x-2 mb-2">
+                                        <Skeleton className="w-4 h-4" />
+                                        <Skeleton className="w-16 h-3" />
+                                    </div>
+                                    <Skeleton className="w-8 h-6" />
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <Card className="bg-card border-border">
+                            <CardContent className="p-4">
+                                <div className="flex items-center space-x-2">
+                                    <Ticket className="w-4 h-4 text-gray-400" />
+                                    <span className="text-sm text-gray-400">Total</span>
+                                </div>
+                                <p className="text-2xl font-bold text-white mt-1">{stats.total}</p>
+                            </CardContent>
+                        </Card>
 
-                    <Card className="bg-card border-border">
-                        <CardContent className="p-4">
-                            <div className="flex items-center space-x-2">
-                                <CheckCircle className="w-4 h-4 text-green-400" />
-                                <span className="text-sm text-gray-400">Válidos</span>
-                            </div>
-                            <p className="text-2xl font-bold text-white mt-1">{stats.valid}</p>
-                        </CardContent>
-                    </Card>
+                        <Card className="bg-card border-border">
+                            <CardContent className="p-4">
+                                <div className="flex items-center space-x-2">
+                                    <CheckCircle className="w-4 h-4 text-green-400" />
+                                    <span className="text-sm text-gray-400">Válidos</span>
+                                </div>
+                                <p className="text-2xl font-bold text-white mt-1">{stats.valid}</p>
+                            </CardContent>
+                        </Card>
 
-                    <Card className="bg-card border-border">
-                        <CardContent className="p-4">
-                            <div className="flex items-center space-x-2">
-                                <Eye className="w-4 h-4 text-blue-400" />
-                                <span className="text-sm text-gray-400">Utilizados</span>
-                            </div>
-                            <p className="text-2xl font-bold text-white mt-1">{stats.used}</p>
-                        </CardContent>
-                    </Card>
+                        <Card className="bg-card border-border">
+                            <CardContent className="p-4">
+                                <div className="flex items-center space-x-2">
+                                    <Eye className="w-4 h-4 text-blue-400" />
+                                    <span className="text-sm text-gray-400">Utilizados</span>
+                                </div>
+                                <p className="text-2xl font-bold text-white mt-1">{stats.used}</p>
+                            </CardContent>
+                        </Card>
 
-                    <Card className="bg-card border-border">
-                        <CardContent className="p-4">
-                            <div className="flex items-center space-x-2">
-                                <RotateCcw className="w-4 h-4 text-yellow-400" />
-                                <span className="text-sm text-gray-400">Reembolsados</span>
-                            </div>
-                            <p className="text-2xl font-bold text-white mt-1">{stats.refunded}</p>
-                        </CardContent>
-                    </Card>
+                        <Card className="bg-card border-border">
+                            <CardContent className="p-4">
+                                <div className="flex items-center space-x-2">
+                                    <RotateCcw className="w-4 h-4 text-yellow-400" />
+                                    <span className="text-sm text-gray-400">Reembolsados</span>
+                                </div>
+                                <p className="text-2xl font-bold text-white mt-1">{stats.refunded}</p>
+                            </CardContent>
+                        </Card>
 
-                    <Card className="bg-card border-border">
-                        <CardContent className="p-4">
-                            <div className="flex items-center space-x-2">
-                                <XCircle className="w-4 h-4 text-red-400" />
-                                <span className="text-sm text-gray-400">Cancelados</span>
-                            </div>
-                            <p className="text-2xl font-bold text-white mt-1">{stats.cancelled}</p>
-                        </CardContent>
-                    </Card>
-                </div>
+                        <Card className="bg-card border-border">
+                            <CardContent className="p-4">
+                                <div className="flex items-center space-x-2">
+                                    <XCircle className="w-4 h-4 text-red-400" />
+                                    <span className="text-sm text-gray-400">Cancelados</span>
+                                </div>
+                                <p className="text-2xl font-bold text-white mt-1">{stats.cancelled}</p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
             </div>
 
             {/* Filtros */}
@@ -433,11 +454,12 @@ export default function IngressosPage() {
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="pl-10 bg-background border-border text-white placeholder:text-gray-400"
+                                    disabled={isLoadingTickets}
                                 />
                             </div>
                         </div>
 
-                        <Select value={selectedEvent} onValueChange={setSelectedEvent}>
+                        <Select value={selectedEvent} onValueChange={setSelectedEvent} disabled={isLoadingEvents}>
                             <SelectTrigger className="w-full md:w-[200px] bg-background border-border text-white">
                                 <SelectValue placeholder="Selecionar evento" />
                             </SelectTrigger>
@@ -451,7 +473,7 @@ export default function IngressosPage() {
                             </SelectContent>
                         </Select>
 
-                        <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                        <Select value={selectedStatus} onValueChange={setSelectedStatus} disabled={isLoadingTickets}>
                             <SelectTrigger className="w-full md:w-[150px] bg-background border-border text-white">
                                 <SelectValue placeholder="Status" />
                             </SelectTrigger>
@@ -467,16 +489,35 @@ export default function IngressosPage() {
                 </CardContent>
             </Card>
 
-            {/* Lista de Ingressos */}
+            {/* Lista de Ingressos com Loading */}
             <Card className="bg-card border-border">
                 <CardHeader>
                     <CardTitle className="text-white flex items-center space-x-2">
                         <Filter className="w-5 h-5" style={{ color: '#E65CFF' }} />
-                        <span>Ingressos ({filteredTickets.length})</span>
+                        <span>Ingressos ({isLoadingTickets ? '...' : filteredTickets.length})</span>
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {filteredTickets.length === 0 ? (
+                    {isLoadingTickets ? (
+                        <div className="space-y-4">
+                            {[...Array(5)].map((_, i) => (
+                                <div key={i} className="flex items-center justify-between p-4 border border-border rounded-lg min-h-[150px]">
+                                    <div className="flex items-center space-x-4 flex-1">
+                                        <Skeleton className="w-10 h-10 rounded" />
+                                        <div className="space-y-2 flex-1">
+                                            <Skeleton className="w-32 h-4" />
+                                            <Skeleton className="w-48 h-3" />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center space-x-4">
+                                        <Skeleton className="w-16 h-6" />
+                                        <Skeleton className="w-20 h-8" />
+                                        <Skeleton className="w-20 h-8" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : filteredTickets.length === 0 ? (
                         <div className="text-center py-12">
                             <Ticket className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                             <p className="text-gray-400">Nenhum ingresso encontrado</p>
