@@ -462,9 +462,9 @@ export default function SaquesPage() {
             {/* Modal de Detalhes */}
             <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']  sm:max-w-3xl">
-                    <DialogHeader className="border-b border-[#E65CFF]/20 pb-4">
-                        <DialogTitle className="text-xl text-destaque flex items-center gap-2">
-                            📋 Detalhes do Saque
+                    <DialogHeader className="pb-4">
+                        <DialogTitle className="text-xl flex items-center gap-2">
+                            Detalhes do Saque
                         </DialogTitle>
                     </DialogHeader>
 
@@ -473,8 +473,8 @@ export default function SaquesPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <Card className="border-[#E65CFF]/20">
                                     <CardHeader>
-                                        <CardTitle className="text-sm text-destaque flex items-center gap-2">
-                                            💰 Informações do Saque
+                                        <CardTitle className="text-sm flex items-center gap-2">
+                                            Informações do Saque
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3 pt-4">
@@ -507,8 +507,8 @@ export default function SaquesPage() {
 
                                 <Card className="border-[#E65CFF]/20">
                                     <CardHeader>
-                                        <CardTitle className="text-sm text-destaque flex items-center gap-2">
-                                            🔑 Informações da Chave PIX
+                                        <CardTitle className="text-sm flex items-center gap-2">
+                                            Informações da Chave PIX
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3 pt-4">
