@@ -253,7 +253,7 @@ export default function SaquesPage() {
                                 placeholder="Buscar por organização, usuário ou email..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10 border-[#E65CFF]/30 focus:border-[#E65CFF]"
+                                className="pl-10"
                             />
                         </div>
                         <Input
@@ -261,14 +261,12 @@ export default function SaquesPage() {
                             placeholder="Valor mínimo (R$)"
                             value={minAmount}
                             onChange={(e) => setMinAmount(e.target.value)}
-                            className="border-[#E65CFF]/30 focus:border-[#E65CFF]"
                         />
                         <Input
                             type="number"
                             placeholder="Valor máximo (R$)"
                             value={maxAmount}
                             onChange={(e) => setMaxAmount(e.target.value)}
-                            className="border-[#E65CFF]/30 focus:border-[#E65CFF]"
                         />
                     </div>
                 </CardContent>
@@ -360,9 +358,9 @@ export default function SaquesPage() {
                                                                     variant="outline" 
                                                                     size="sm" 
                                                                     onClick={() => handleViewDetails(withdrawal._id as Id<"organizationWithdrawals">)}
-                                                                    className="border-[#E65CFF] text-destaque hover:bg-[#E65CFF] hover:text-white"
+                                                                    className="border-[#E65CFF] text-destaque hover:bg-[#E65CFF] hover:text-white!"
                                                                 >
-                                                                    📋 Detalhes
+                                                                    Detalhes
                                                                 </Button>
 
                                                                 {selectedStatus === "pending" && (
@@ -428,7 +426,7 @@ export default function SaquesPage() {
                                                     setMinAmount('');
                                                     setMaxAmount('');
                                                 }}
-                                                className="border-[#E65CFF] text-destaque hover:bg-[#E65CFF] hover:text-white"
+                                                className="border-[#E65CFF] text-destaque hover:bg-[#E65CFF] hover:text-white!"
                                             >
                                                 Limpar filtros
                                             </Button>
@@ -463,7 +461,7 @@ export default function SaquesPage() {
 
             {/* Modal de Detalhes */}
             <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']  sm:max-w-3xl">
                     <DialogHeader className="border-b border-[#E65CFF]/20 pb-4">
                         <DialogTitle className="text-xl text-destaque flex items-center gap-2">
                             📋 Detalhes do Saque
