@@ -1241,6 +1241,58 @@ export type PublicApiType = {
       { userId: string; withdrawalId: Id<"organizationWithdrawals"> },
       any
     >;
+    listAllTickets: FunctionReference<
+      "query",
+      "public",
+      { userId: string },
+      any
+    >;
+    getTicketsForEvent: FunctionReference<
+      "query",
+      "public",
+      { eventId: Id<"events">; userId: string },
+      any
+    >;
+    getAllPlatformTickets: FunctionReference<
+      "query",
+      "public",
+      {
+        eventId?: Id<"events">;
+        limit?: number;
+        status?: "valid" | "used" | "refunded" | "cancelled";
+        userId: string;
+      },
+      any
+    >;
+    updateTicketStatusAdmin: FunctionReference<
+      "mutation",
+      "public",
+      {
+        newStatus: "valid" | "used" | "refunded" | "cancelled";
+        reason?: string;
+        ticketId: Id<"tickets">;
+        userId: string;
+      },
+      any
+    >;
+    getTicketDetails: FunctionReference<
+      "query",
+      "public",
+      { ticketId: Id<"tickets">; userId: string },
+      any
+    >;
+    getTicketsByEmailAdmin: FunctionReference<
+      "query",
+      "public",
+      { email: string; eventId?: Id<"events">; userId: string },
+      any
+    >;
+    getTicketsByCpfAdmin: FunctionReference<
+      "query",
+      "public",
+      { cpf: string; eventId?: Id<"events">; userId: string },
+      any
+    >;
   };
   customers: {
     create: FunctionReference<

@@ -90,7 +90,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           },
           {
             title: "Ingressos",
-            url: "#",
+            url: "/ingressos",
             icon: RiCoupon3Line,
           },
           {
