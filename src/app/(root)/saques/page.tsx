@@ -17,6 +17,7 @@ import Spinner from "@/components/Spinner";
 import { GenericId as Id } from "convex/values";
 import { useStorageUrl } from "@/lib/utils";
 import { Search, Filter, DollarSign, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Label } from "@/components/ui/label";
 
 // Componente para exibir o status do saque
 const WithdrawalStatusBadge = ({ status }: { status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' }) => {
@@ -369,16 +370,16 @@ export default function SaquesPage() {
                                                                             variant="default" 
                                                                             size="sm" 
                                                                             onClick={() => handleOpenProcessing(withdrawal._id as Id<"organizationWithdrawals">, "approve")}
-                                                                            className="bg-green-600 hover:bg-green-700"
+                                                                            className="bg-green-700 hover:bg-green-800 text-white"
                                                                         >
-                                                                            ✅ Aprovar
+                                                                            Aprovar
                                                                         </Button>
                                                                         <Button 
                                                                             variant="destructive" 
                                                                             size="sm" 
                                                                             onClick={() => handleOpenProcessing(withdrawal._id as Id<"organizationWithdrawals">, "cancel")}
                                                                         >
-                                                                            ❌ Cancelar
+                                                                            Cancelar
                                                                         </Button>
                                                                     </>
                                                                 )}
@@ -389,16 +390,16 @@ export default function SaquesPage() {
                                                                             variant="default" 
                                                                             size="sm" 
                                                                             onClick={() => handleOpenProcessing(withdrawal._id as Id<"organizationWithdrawals">, "complete")}
-                                                                            className="bg-blue-600 hover:bg-blue-700"
+                                                                            className="bg-green-700 hover:bg-green-800 text-white"
                                                                         >
-                                                                            🎯 Concluir
+                                                                            Concluir
                                                                         </Button>
                                                                         <Button 
                                                                             variant="destructive" 
                                                                             size="sm" 
                                                                             onClick={() => handleOpenProcessing(withdrawal._id as Id<"organizationWithdrawals">, "reject")}
                                                                         >
-                                                                            🚫 Rejeitar
+                                                                            Rejeitar
                                                                         </Button>
                                                                     </>
                                                                 )}
@@ -675,8 +676,8 @@ export default function SaquesPage() {
 
                         {processingAction === "complete" && (
                             <div className="space-y-2">
-                                <label className="block text-sm font-medium">Comprovante de Pagamento</label>
-                                <input
+                                <Label className="block text-sm font-medium">Comprovante de Pagamento</Label>
+                                <Input
                                     type="file"
                                     accept="image/*,.pdf"
                                     onChange={handleFileChange}
