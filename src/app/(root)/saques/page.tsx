@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import Spinner from "@/components/Spinner";
 import { GenericId as Id } from "convex/values";
 import { useStorageUrl } from "@/lib/utils";
-import { Search, Filter, DollarSign, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Search, Filter, DollarSign, Clock, CheckCircle, XCircle, AlertCircle, Download } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
 // Componente para exibir o status do saque
@@ -598,7 +598,25 @@ export default function SaquesPage() {
                             {withdrawalDetails.withdrawal.receiptStorageId && (
                                 <Card>
                                     <CardHeader>
-                                        <CardTitle className="text-sm">Comprovante de Pagamento</CardTitle>
+                                        <div className="flex items-center justify-between">
+                                            <CardTitle className="text-sm">Comprovante de Pagamento</CardTitle>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                    const link = document.createElement('a');
+                                                    link.href = receiptUrl;
+                                                    link.download = `comprovante-${withdrawalDetails.withdrawal._id}.jpg`;
+                                                    document.body.appendChild(link);
+                                                    link.click();
+                                                    document.body.removeChild(link);
+                                                }}
+                                                className="h-8 w-8 p-0 hover:bg-[#E65CFF]/10 hover:text-[#E65CFF]"
+                                                title="Baixar comprovante"
+                                            >
+                                                <Download className="h-4 w-4" />
+                                            </Button>
+                                        </div>
                                     </CardHeader>
                                     <CardContent className="flex justify-center">
                                         <img
