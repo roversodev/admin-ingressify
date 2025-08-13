@@ -12,24 +12,94 @@ import { toast } from 'sonner';
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStorage } from "@/hooks/use-storage";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import Spinner from "@/components/Spinner";
 import { GenericId as Id } from "convex/values";
 import { useStorageUrl } from "@/lib/utils";
+import { Search, Filter, DollarSign, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 
 // Componente para exibir o status do saque
 const WithdrawalStatusBadge = ({ status }: { status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' }) => {
     const statusConfig = {
-        pending: { label: "Pendente", variant: "outline" },
-        processing: { label: "Em Processamento", variant: "secondary" },
-        completed: { label: "Concluído", variant: "success" },
-        failed: { label: "Falhou", variant: "destructive" },
-        cancelled: { label: "Cancelado", variant: "destructive" },
+        pending: { label: "Pendente", variant: "outline", icon: Clock, color: "text-yellow-600" },
+        processing: { label: "Em Processamento", variant: "secondary", icon: AlertCircle, color: "text-blue-600" },
+        completed: { label: "Concluído", variant: "success", icon: CheckCircle, color: "text-green-600" },
+        failed: { label: "Falhou", variant: "destructive", icon: XCircle, color: "text-red-600" },
+        cancelled: { label: "Cancelado", variant: "destructive", icon: XCircle, color: "text-red-600" },
     };
 
-    const config = statusConfig[status] || { label: status, variant: "outline" };
+    const config = statusConfig[status] || { label: status, variant: "outline", icon: Clock, color: "text-gray-600" };
+    const Icon = config.icon;
 
     return (
-        <Badge variant={config.variant as "outline" | "secondary" | "destructive" | "default"}>{config.label}</Badge>
+        <Badge variant={config.variant as "outline" | "secondary" | "destructive" | "default"} className="flex items-center gap-1">
+            <Icon className="w-3 h-3" />
+            {config.label}
+        </Badge>
+    );
+};
+
+// Componente para estatísticas rápidas
+const QuickStats = ({ withdrawalsResult }: { withdrawalsResult: any }) => {
+    if (!withdrawalsResult) return null;
+
+    const totalAmount = withdrawalsResult.withdrawals.reduce((sum: number, w: any) => sum + (w.amount || 0), 0);
+    const count = withdrawalsResult.withdrawals.length;
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <Card className="border-l-4 border-l-[#E65CFF] hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-muted-foreground">Total de Saques</p>
+                            <p className="text-2xl font-bold">{count}</p>
+                        </div>
+                        <div className="p-2 bg-[#E65CFF]/10 rounded-lg">
+                            <DollarSign className="w-6 h-6 text-destaque" />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+            
+            <Card className="border-l-4 border-l-[#E65CFF] hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-muted-foreground">Valor Total</p>
+                            <p className="text-2xl font-bold">
+                                {new Intl.NumberFormat('pt-BR', { 
+                                    style: 'currency', 
+                                    currency: 'BRL' 
+                                }).format(totalAmount)}
+                            </p>
+                        </div>
+                        <div className="p-2 bg-[#E65CFF]/10 rounded-lg">
+                            <DollarSign className="w-6 h-6 text-destaque" />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card className="border-l-4 border-l-[#E65CFF] hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-muted-foreground">Valor Médio</p>
+                            <p className="text-2xl font-bold">
+                                {count > 0 ? new Intl.NumberFormat('pt-BR', { 
+                                    style: 'currency', 
+                                    currency: 'BRL' 
+                                }).format((totalAmount / count)) : 'R$ 0,00'}
+                            </p>
+                        </div>
+                        <div className="p-2 bg-[#E65CFF]/10 rounded-lg">
+                            <DollarSign className="w-6 h-6 text-destaque" />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
     );
 };
 
@@ -44,6 +114,9 @@ export default function SaquesPage() {
     const [processingNotes, setProcessingNotes] = useState("");
     const [receiptFile, setReceiptFile] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [minAmount, setMinAmount] = useState("");
+    const [maxAmount, setMaxAmount] = useState("");
 
     // Buscar saques
     const withdrawalsResult = useQuery(api.admin.listAllOrganizationWithdrawals, {
@@ -65,6 +138,20 @@ export default function SaquesPage() {
 
     // Mutation para processar saques
     const processWithdrawal = useMutation(api.admin.processWithdrawal);
+
+    // Filtrar saques
+    const filteredWithdrawals = withdrawalsResult?.withdrawals?.filter((withdrawal: any) => {
+        const matchesSearch = !searchTerm || 
+            withdrawal.organizationName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            withdrawal.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            withdrawal.userEmail?.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        const amount = withdrawal.amount || 0;
+        const matchesMinAmount = !minAmount || amount >= (parseFloat(minAmount) * 100);
+        const matchesMaxAmount = !maxAmount || amount <= (parseFloat(maxAmount) * 100);
+        
+        return matchesSearch && matchesMinAmount && matchesMaxAmount;
+    }) || [];
 
     // Função para abrir o modal de detalhes
     const handleViewDetails = (withdrawalId: Id<"organizationWithdrawals">) => {
@@ -139,86 +226,234 @@ export default function SaquesPage() {
         return <Spinner />;
     }
 
-
     return (
-        <div className="container mx-auto py-10">
-            <h1 className="text-3xl font-bold mb-6">Gerenciamento de Saques</h1>
+        <div className="container mx-auto py-8 space-y-6">
+            {/* Header com gradiente */}
+            <div>
+                <h1 className="text-3xl font-bold mb-2">Gerenciamento de Saques</h1>
+                <p className="text-muted-foreground">Gerencie e processe saques de organizações de forma eficiente</p>
+            </div>
 
-            <Tabs value={selectedStatus} onValueChange={setSelectedStatus} className="space-y-4">
-                <TabsList>
-                    <TabsTrigger value="pending">Pendentes</TabsTrigger>
-                    <TabsTrigger value="processing">Em Processamento</TabsTrigger>
-                    <TabsTrigger value="completed">Concluídos</TabsTrigger>
-                    <TabsTrigger value="failed">Falhas</TabsTrigger>
-                    <TabsTrigger value="cancelled">Cancelados</TabsTrigger>
+            {/* Estatísticas rápidas */}
+            <QuickStats withdrawalsResult={withdrawalsResult} />
+
+            {/* Filtros */}
+            <Card className="border-[#E65CFF]/20">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-destaque">
+                        <Filter className="w-5 h-5" />
+                        Filtros
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                            <Input
+                                placeholder="Buscar por organização, usuário ou email..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10 border-[#E65CFF]/30 focus:border-[#E65CFF]"
+                            />
+                        </div>
+                        <Input
+                            type="number"
+                            placeholder="Valor mínimo (R$)"
+                            value={minAmount}
+                            onChange={(e) => setMinAmount(e.target.value)}
+                            className="border-[#E65CFF]/30 focus:border-[#E65CFF]"
+                        />
+                        <Input
+                            type="number"
+                            placeholder="Valor máximo (R$)"
+                            value={maxAmount}
+                            onChange={(e) => setMaxAmount(e.target.value)}
+                            className="border-[#E65CFF]/30 focus:border-[#E65CFF]"
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Tabs value={selectedStatus} onValueChange={setSelectedStatus} className="space-y-6">
+                <TabsList className="w-full p-1 rounded-lg">
+                    <TabsTrigger 
+                        value="pending" 
+                        className="data-[state=active]:bg-[#E65CFF] data-[state=active]:text-white font-medium"
+                    >
+                        Pendentes
+                    </TabsTrigger>
+                    <TabsTrigger 
+                        value="processing"
+                        className="data-[state=active]:bg-[#E65CFF] data-[state=active]:text-white font-medium"
+                    >
+                        Processando
+                    </TabsTrigger>
+                    <TabsTrigger 
+                        value="completed"
+                        className="data-[state=active]:bg-[#E65CFF] data-[state=active]:text-white font-medium"
+                    >
+                        Concluídos
+                    </TabsTrigger>
+                    <TabsTrigger 
+                        value="failed"
+                        className="data-[state=active]:bg-[#E65CFF] data-[state=active]:text-white font-medium"
+                    >
+                        Falhas
+                    </TabsTrigger>
+                    <TabsTrigger 
+                        value="cancelled"
+                        className="data-[state=active]:bg-[#E65CFF] data-[state=active]:text-white font-medium"
+                    >
+                        Cancelados
+                    </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value={selectedStatus} className="space-y-4">
-                    <Card>
+                    <Card className="border-[#E65CFF]/20 shadow-sm">
                         <CardHeader>
-                            <CardTitle>Saques {selectedStatus === "pending" ? "Pendentes" :
-                                selectedStatus === "processing" ? "Em Processamento" :
-                                    selectedStatus === "completed" ? "Concluídos" :
-                                        selectedStatus === "failed" ? "Falhos" :
-                                            "Cancelados"}</CardTitle>
+                            <CardTitle className="flex items-center justify-between">
+                                <span className="text-destaque">
+                                    Saques {selectedStatus === "pending" ? "Pendentes" :
+                                        selectedStatus === "processing" ? "Em Processamento" :
+                                            selectedStatus === "completed" ? "Concluídos" :
+                                                selectedStatus === "failed" ? "Falhos" :
+                                                    "Cancelados"}
+                                </span>
+                                <Badge variant="outline" className="border-[#E65CFF] text-destaque">
+                                    {filteredWithdrawals.length} {filteredWithdrawals.length === 1 ? 'saque' : 'saques'}
+                                </Badge>
+                            </CardTitle>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="p-6">
                             {withdrawalsResult ? (
-                                withdrawalsResult.withdrawals.length > 0 ? (
+                                filteredWithdrawals.length > 0 ? (
                                     <div className="space-y-4">
-                                        {withdrawalsResult.withdrawals.map((withdrawal: { _id: Key | null | undefined; organizationName: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; userName: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; userEmail: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; formattedAmount: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; formattedDate: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; }) => (
-                                            <div key={withdrawal._id} className="p-4 border rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                                <div className="space-y-1">
-                                                    <div className="font-medium">{withdrawal.organizationName}</div>
-                                                    <div className="text-sm text-muted-foreground">{withdrawal.userName}</div>
-                                                    <div className="text-sm text-muted-foreground">{withdrawal.userEmail}</div>
-                                                </div>
+                                        {filteredWithdrawals.map((withdrawal: any) => (
+                                            <Card key={withdrawal._id} className="hover:border-[#E65CFF]/50 hover:shadow-md transition-all duration-200">
+                                                <CardContent className="p-4">
+                                                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                                                        <div className="flex-1 space-y-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <h3 className="font-semibold text-lg text-destaque">{withdrawal.organizationName}</h3>
+                                                                <WithdrawalStatusBadge status={withdrawal.status} />
+                                                            </div>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
+                                                                <div className="flex items-center gap-1">
+                                                                    <span className="font-medium">👤 Responsável:</span>
+                                                                    <span>{withdrawal.userName}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1">
+                                                                    <span className="font-medium">📧 Email:</span>
+                                                                    <span>{withdrawal.userEmail}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
 
-                                                <div className="text-center">
-                                                    <div className="font-bold text-lg">{withdrawal.formattedAmount}</div>
-                                                    <div className="text-sm text-muted-foreground">{withdrawal.formattedDate}</div>
-                                                </div>
+                                                        <div className="flex flex-col lg:flex-row items-center gap-4">
+                                                            <div className="text-center lg:text-right">
+                                                                <div className="text-2xl font-bold text-green-600">{withdrawal.formattedAmount}</div>
+                                                                <div className="text-sm text-muted-foreground">{withdrawal.formattedDate}</div>
+                                                            </div>
 
-                                                <div className="flex flex-col md:flex-row gap-2">
-                                                    <Button variant="outline" size="sm" onClick={() => handleViewDetails(withdrawal._id as Id<"organizationWithdrawals">)}>
-                                                        Detalhes
-                                                    </Button>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                <Button 
+                                                                    variant="outline" 
+                                                                    size="sm" 
+                                                                    onClick={() => handleViewDetails(withdrawal._id as Id<"organizationWithdrawals">)}
+                                                                    className="border-[#E65CFF] text-destaque hover:bg-[#E65CFF] hover:text-white"
+                                                                >
+                                                                    📋 Detalhes
+                                                                </Button>
 
-                                                    {selectedStatus === "pending" && (
-                                                        <>
-                                                            <Button variant="default" size="sm" onClick={() => handleOpenProcessing(withdrawal._id as Id<"organizationWithdrawals">, "approve")}>
-                                                                Aprovar
-                                                            </Button>
-                                                            <Button variant="destructive" size="sm" onClick={() => handleOpenProcessing(withdrawal._id as Id<"organizationWithdrawals">, "cancel")}>
-                                                                Cancelar
-                                                            </Button>
-                                                        </>
-                                                    )}
+                                                                {selectedStatus === "pending" && (
+                                                                    <>
+                                                                        <Button 
+                                                                            variant="default" 
+                                                                            size="sm" 
+                                                                            onClick={() => handleOpenProcessing(withdrawal._id as Id<"organizationWithdrawals">, "approve")}
+                                                                            className="bg-green-600 hover:bg-green-700"
+                                                                        >
+                                                                            ✅ Aprovar
+                                                                        </Button>
+                                                                        <Button 
+                                                                            variant="destructive" 
+                                                                            size="sm" 
+                                                                            onClick={() => handleOpenProcessing(withdrawal._id as Id<"organizationWithdrawals">, "cancel")}
+                                                                        >
+                                                                            ❌ Cancelar
+                                                                        </Button>
+                                                                    </>
+                                                                )}
 
-                                                    {selectedStatus === "processing" && (
-                                                        <>
-                                                            <Button variant="default" size="sm" onClick={() => handleOpenProcessing(withdrawal._id as Id<"organizationWithdrawals">, "complete")}>
-                                                                Concluir
-                                                            </Button>
-                                                            <Button variant="destructive" size="sm" onClick={() => handleOpenProcessing(withdrawal._id as Id<"organizationWithdrawals">, "reject")}>
-                                                                Rejeitar
-                                                            </Button>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
+                                                                {selectedStatus === "processing" && (
+                                                                    <>
+                                                                        <Button 
+                                                                            variant="default" 
+                                                                            size="sm" 
+                                                                            onClick={() => handleOpenProcessing(withdrawal._id as Id<"organizationWithdrawals">, "complete")}
+                                                                            className="bg-blue-600 hover:bg-blue-700"
+                                                                        >
+                                                                            🎯 Concluir
+                                                                        </Button>
+                                                                        <Button 
+                                                                            variant="destructive" 
+                                                                            size="sm" 
+                                                                            onClick={() => handleOpenProcessing(withdrawal._id as Id<"organizationWithdrawals">, "reject")}
+                                                                        >
+                                                                            🚫 Rejeitar
+                                                                        </Button>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="text-center py-8 text-muted-foreground">
-                                        Nenhum saque encontrado nesta categoria.
+                                    <div className="text-center py-12">
+                                        <div className="text-6xl mb-4">🔍</div>
+                                        <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                                            {searchTerm || minAmount || maxAmount ? 
+                                                'Nenhum saque encontrado com os filtros aplicados' : 
+                                                'Nenhum saque encontrado nesta categoria'
+                                            }
+                                        </h3>
+                                        {(searchTerm || minAmount || maxAmount) && (
+                                            <Button 
+                                                variant="outline" 
+                                                onClick={() => {
+                                                    setSearchTerm('');
+                                                    setMinAmount('');
+                                                    setMaxAmount('');
+                                                }}
+                                                className="border-[#E65CFF] text-destaque hover:bg-[#E65CFF] hover:text-white"
+                                            >
+                                                Limpar filtros
+                                            </Button>
+                                        )}
                                     </div>
                                 )
                             ) : (
                                 <div className="space-y-4">
-                                    <Skeleton className="h-20 w-full" />
-                                    <Skeleton className="h-20 w-full" />
-                                    <Skeleton className="h-20 w-full" />
+                                    {[1, 2, 3].map((i) => (
+                                        <Card key={i} className="border border-gray-200">
+                                            <CardContent className="p-4">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="space-y-2 flex-1">
+                                                        <Skeleton className="h-6 w-48" />
+                                                        <Skeleton className="h-4 w-32" />
+                                                        <Skeleton className="h-4 w-40" />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Skeleton className="h-8 w-24" />
+                                                        <Skeleton className="h-4 w-20" />
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
                                 </div>
                             )}
                         </CardContent>
@@ -228,63 +463,73 @@ export default function SaquesPage() {
 
             {/* Modal de Detalhes */}
             <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>Detalhes do Saque</DialogTitle>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+                    <DialogHeader className="border-b border-[#E65CFF]/20 pb-4">
+                        <DialogTitle className="text-xl text-destaque flex items-center gap-2">
+                            📋 Detalhes do Saque
+                        </DialogTitle>
                     </DialogHeader>
 
                     {withdrawalDetails ? (
-                        <div className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Card>
+                        <div className="space-y-6 pt-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <Card className="border-[#E65CFF]/20">
                                     <CardHeader>
-                                        <CardTitle className="text-sm">Informações do Saque</CardTitle>
+                                        <CardTitle className="text-sm text-destaque flex items-center gap-2">
+                                            💰 Informações do Saque
+                                        </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="space-y-2">
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Valor:</span>
-                                            <span className="font-medium">{withdrawalDetails.withdrawal.formattedAmount}</span>
+                                    <CardContent className="space-y-3 pt-4">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-muted-foreground font-medium">Valor:</span>
+                                            <span className="font-bold text-lg text-green-600">{withdrawalDetails.withdrawal.formattedAmount}</span>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Status:</span>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-muted-foreground font-medium">Status:</span>
                                             <WithdrawalStatusBadge status={withdrawalDetails.withdrawal.status} />
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Solicitado em:</span>
-                                            <span>{withdrawalDetails.withdrawal.formattedRequestDate}</span>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-muted-foreground font-medium">Solicitado em:</span>
+                                            <span className="font-medium">{withdrawalDetails.withdrawal.formattedRequestDate}</span>
                                         </div>
                                         {withdrawalDetails.withdrawal.processedAt && (
-                                            <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Processado em:</span>
-                                                <span>{withdrawalDetails.withdrawal.formattedProcessDate}</span>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-muted-foreground font-medium">Processado em:</span>
+                                                <span className="font-medium">{withdrawalDetails.withdrawal.formattedProcessDate}</span>
                                             </div>
                                         )}
                                         {withdrawalDetails.withdrawal.failureReason && (
-                                            <div className="mt-2">
-                                                <span className="text-muted-foreground">Motivo da falha/cancelamento:</span>
-                                                <p className="mt-1 text-sm border p-2 rounded">{withdrawalDetails.withdrawal.failureReason}</p>
+                                            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                                <span className="text-red-700 font-medium block mb-1">Motivo da falha/cancelamento:</span>
+                                                <p className="text-sm text-red-600">{withdrawalDetails.withdrawal.failureReason}</p>
                                             </div>
                                         )}
                                     </CardContent>
                                 </Card>
 
-                                <Card>
+                                <Card className="border-[#E65CFF]/20">
                                     <CardHeader>
-                                        <CardTitle className="text-sm">Informações da Chave PIX</CardTitle>
+                                        <CardTitle className="text-sm text-destaque flex items-center gap-2">
+                                            🔑 Informações da Chave PIX
+                                        </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="space-y-2">
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Tipo:</span>
-                                            <span className="font-medium uppercase">{withdrawalDetails.withdrawal.pixKey.keyType}</span>
+                                    <CardContent className="space-y-3 pt-4">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-muted-foreground font-medium">Tipo:</span>
+                                            <Badge variant="outline" className="font-medium uppercase border-[#E65CFF] text-destaque">
+                                                {withdrawalDetails.withdrawal.pixKey.keyType}
+                                            </Badge>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Chave:</span>
-                                            <span className="font-medium">{withdrawalDetails.withdrawal.pixKey.key}</span>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-muted-foreground font-medium">Chave:</span>
+                                            <span className="font-mono text-sm bg-zinc-800 px-2 py-1 rounded">
+                                                {withdrawalDetails.withdrawal.pixKey.key}
+                                            </span>
                                         </div>
                                         {withdrawalDetails.withdrawal.pixKey.description && (
-                                            <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Descrição:</span>
-                                                <span>{withdrawalDetails.withdrawal.pixKey.description}</span>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-muted-foreground font-medium">Descrição:</span>
+                                                <span className="font-medium">{withdrawalDetails.withdrawal.pixKey.description}</span>
                                             </div>
                                         )}
                                     </CardContent>
@@ -413,21 +658,17 @@ export default function SaquesPage() {
                     )}
                 </DialogContent>
             </Dialog>
-            
+
             {/* Modal de Processamento */}
             <Dialog open={isProcessingOpen} onOpenChange={setIsProcessingOpen}>
-                <DialogContent className="max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {processingAction === "approve" ? "Aprovar Saque" :
-                                processingAction === "complete" ? "Concluir Saque" :
-                                    processingAction === "reject" ? "Rejeitar Saque" :
-                                        processingAction === "cancel" ? "Cancelar Saque" :
-                                            "Processar Saque"}
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader className="border-b border-[#E65CFF]/20 pb-4">
+                        <DialogTitle className="text-xl text-destaque flex items-center gap-2">
+                            ⚙️ Processar Saque
                         </DialogTitle>
                     </DialogHeader>
 
-                    <div className="space-y-4">
+                    <div className="space-y-6 pt-4">
                         <Textarea
                             placeholder="Observações (opcional)"
                             value={processingNotes}
