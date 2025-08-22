@@ -129,7 +129,7 @@ export default function EventsPage() {
         return new Intl.NumberFormat("pt-BR", {
             style: "currency",
             currency: "BRL",
-        }).format(value / 100); // Dividir por 100 se o valor estiver em centavos
+        }).format(value);
     };
 
     const formatDate = (timestamp: number) => {
