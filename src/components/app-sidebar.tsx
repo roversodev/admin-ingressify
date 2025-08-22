@@ -85,7 +85,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           },
           {
             title: "Eventos",
-            url: "#",
+            url: "/eventos",
             icon: RiCalendarEventLine,
           },
           {
