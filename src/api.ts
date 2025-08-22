@@ -156,7 +156,7 @@ export type PublicApiType = {
         eventEndDate: number;
         eventStartDate: number;
         latitude?: number;
-        location: string;
+        location?: string;
         longitude?: number;
         name: string;
         organizationId: Id<"organizations">;
@@ -983,6 +983,7 @@ export type PublicApiType = {
       { cpf: string; userId?: string },
       any
     >;
+    getUserStats: FunctionReference<"query", "public", { userId: string }, any>;
   };
   validators: {
     inviteValidator: FunctionReference<
@@ -1291,6 +1292,12 @@ export type PublicApiType = {
       "query",
       "public",
       { cpf: string; eventId?: Id<"events">; userId: string },
+      any
+    >;
+    listAllEventsWithOrganization: FunctionReference<
+      "query",
+      "public",
+      { limit?: number; searchTerm?: string; skip?: number; userId: string },
       any
     >;
   };
