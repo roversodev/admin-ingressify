@@ -653,6 +653,12 @@ export type PublicApiType = {
       { eventId: Id<"events"> },
       any
     >;
+    getAllEventTicketTypes: FunctionReference<
+      "query",
+      "public",
+      { eventId: Id<"events"> },
+      any
+    >;
     createTicketType: FunctionReference<
       "mutation",
       "public",
@@ -1300,12 +1306,29 @@ export type PublicApiType = {
       { limit?: number; searchTerm?: string; skip?: number; userId: string },
       any
     >;
+    getOrganizationCompletedWithdrawals: FunctionReference<
+      "mutation",
+      "public",
+      { organizationId: Id<"organizations"> },
+      any
+    >;
   };
   customers: {
     create: FunctionReference<
       "mutation",
       "public",
-      { customerId: string; email: string; userId: string },
+      {
+        customerId: string;
+        email: string;
+        provider: "pagarme" | "mercadopago";
+        userId: string;
+      },
+      any
+    >;
+    getByUserIdAndProvider: FunctionReference<
+      "query",
+      "public",
+      { provider: "pagarme" | "mercadopago"; userId: string },
       any
     >;
     getByUserId: FunctionReference<"query", "public", { userId: string }, any>;
@@ -1442,6 +1465,36 @@ export type PublicApiType = {
       "mutation",
       "public",
       { email: string; userId: string; validationUrl: string },
+      any
+    >;
+  };
+  paymentCards: {
+    save: FunctionReference<
+      "mutation",
+      "public",
+      {
+        brand?: string;
+        cardId: string;
+        customerId: string;
+        expMonth?: string;
+        expYear?: string;
+        holderName?: string;
+        last4?: string;
+        provider: "pagarme" | "mercadopago";
+        userId: string;
+      },
+      any
+    >;
+    listByUserProvider: FunctionReference<
+      "query",
+      "public",
+      { provider: "pagarme" | "mercadopago"; userId: string },
+      any
+    >;
+    deleteByCardId: FunctionReference<
+      "mutation",
+      "public",
+      { cardId: string },
       any
     >;
   };

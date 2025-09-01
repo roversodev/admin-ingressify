@@ -111,14 +111,24 @@ export default function EventsPage() {
 
     // Mutação para buscar transações
     const getOrganizationTransactionsMutation = useMutation(api.admin.getOrganizationTransactionsMutation);
+    
+    // Nova query para buscar saques completados
+    const getOrganizationCompletedWithdrawals = useMutation(api.admin.getOrganizationCompletedWithdrawals);
 
     // Função para calcular faturamento de um evento
     const calculateEventRevenue = async (event: any) => {
         try {
             const organizationId = event.organizationId || event._id;
+            
+            // Buscar transações
             const transactions = await getOrganizationTransactionsMutation({
                 organizationId,
                 userId: user?.id || ""
+            });
+
+            // Buscar saques completados da organização
+            const withdrawalsData = await getOrganizationCompletedWithdrawals({
+                organizationId,
             });
 
             if (transactions && transactions.length > 0) {
@@ -153,6 +163,20 @@ export default function EventsPage() {
                     }
                 });
 
+                // Calcular proporção deste evento no total da organização
+                const allOrgTransactions = transactions.filter((t: any) => t.status === 'paid' || t.status === 'completed');
+                const totalOrgRevenue = allOrgTransactions.reduce((sum: number, t: any) => {
+                    return sum + calculateTransactionAmounts(t).producerAmount;
+                }, 0);
+
+                // Calcular proporção dos saques que devem ser descontados deste evento
+                const eventProportion = totalOrgRevenue > 0 ? totalProducerAmount / totalOrgRevenue : 0;
+                const eventWithdrawalDeduction = (withdrawalsData?.totalWithdrawn || 0) * eventProportion;
+
+                // Aplicar desconto proporcional nos saldos disponíveis
+                const adjustedPixAvailable = Math.max(0, pixAvailable - (eventWithdrawalDeduction * (pixAvailable / (pixAvailable + cardAvailable || 1))));
+                const adjustedCardAvailable = Math.max(0, cardAvailable - (eventWithdrawalDeduction * (cardAvailable / (pixAvailable + cardAvailable || 1))));
+
                 return {
                     ...event,
                     revenue: totalRevenue,
@@ -160,9 +184,10 @@ export default function EventsPage() {
                     platformFees: totalPlatformFees,
                     transactionCount: eventTransactions.length,
                     paidTransactionCount: paidTransactions.length,
-                    pixAvailable,
+                    pixAvailable: adjustedPixAvailable,
                     cardInRelease,
-                    cardAvailable
+                    cardAvailable: adjustedCardAvailable,
+                    totalWithdrawn: eventWithdrawalDeduction // Para debug/informação
                 };
             }
 
@@ -175,7 +200,8 @@ export default function EventsPage() {
                 paidTransactionCount: 0,
                 pixAvailable: 0,
                 cardInRelease: 0,
-                cardAvailable: 0
+                cardAvailable: 0,
+                totalWithdrawn: 0
             };
         } catch (error) {
             console.error(`Erro ao calcular faturamento do evento ${event.name}:`, error);
@@ -188,7 +214,8 @@ export default function EventsPage() {
                 paidTransactionCount: 0,
                 pixAvailable: 0,
                 cardInRelease: 0,
-                cardAvailable: 0
+                cardAvailable: 0,
+                totalWithdrawn: 0
             };
         }
     };
@@ -685,8 +712,6 @@ export default function EventsPage() {
                                         </CardContent>
                                     </Card>
                                 </div>
-
-
                             </div>
                         </div>
                     </div>
