@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { toast } from 'sonner';
 import { type GenericId as Id } from "convex/values";
+import { feeCalculations, CustomFeeSettings } from "@/lib/fees";
 
 // Hook para debounce
 function useDebounce(value: string, delay: number) {
@@ -50,18 +51,24 @@ function useDebounce(value: string, delay: number) {
 }
 
 // Função para calcular valores corretos de uma transação
-const calculateTransactionAmounts = (transaction: any) => {
+const calculateTransactionAmounts = (transaction: any, eventFeeSettings?: CustomFeeSettings | null) => {
     const totalAmount = transaction.amount;
     const discountAmount = transaction.metadata?.discountAmount || 0;
-
-    // Valor original do ingresso (antes da taxa da plataforma)
-    const originalAmount = totalAmount + discountAmount;
-
-    // Valor do produtor: valor original / 1.1 (remove os 10% da plataforma) - desconto
-    const producerAmount = (originalAmount / 1.1) - discountAmount;
-
-    // Taxa da plataforma (10%)
+    const paymentMethod = transaction.paymentMethod === 'pix' ? 'PIX' : 'CARD';
+    
+    // Usar as funções de cálculo de taxas com configurações personalizadas
+    const producerAmount = feeCalculations.calculateProducerAmount(
+        totalAmount,
+        discountAmount,
+        paymentMethod,
+        eventFeeSettings || undefined
+    );
+    
+    // Taxa da plataforma é a diferença entre o total e o valor do produtor
     const platformFee = totalAmount - producerAmount;
+    
+    // Valor original (antes de descontos)
+    const originalAmount = totalAmount + discountAmount;
 
     return {
         totalAmount,
@@ -135,6 +142,13 @@ export default function EventsPage() {
                 // Filtrar transações apenas deste evento específico
                 const eventTransactions = transactions.filter((t: any) => t.eventId === event._id);
 
+                // Converter feeSettings para o formato esperado pela função de cálculo
+                const customFeeSettings: CustomFeeSettings | null = event.feeSettings ? {
+                    pixFeePercentage: event.feeSettings.pixFeePercentage,
+                    cardFeePercentage: event.feeSettings.cardFeePercentage,
+                    useCustomFees: true
+                } : null;
+
                 // Calcular valores corretos
                 let totalRevenue = 0;
                 let totalProducerAmount = 0;
@@ -146,7 +160,7 @@ export default function EventsPage() {
                 const paidTransactions = eventTransactions.filter((t: any) => t.status === 'paid' || t.status === 'completed');
 
                 paidTransactions.forEach((transaction: any) => {
-                    const amounts = calculateTransactionAmounts(transaction);
+                    const amounts = calculateTransactionAmounts(transaction, customFeeSettings);
                     totalRevenue += amounts.totalAmount;
                     totalProducerAmount += amounts.producerAmount;
                     totalPlatformFees += amounts.platformFee;
@@ -163,12 +177,15 @@ export default function EventsPage() {
                     }
                 });
 
+                // ... resto da função permanece igual
                 // Calcular proporção deste evento no total da organização
                 const allOrgTransactions = transactions.filter((t: any) => t.status === 'paid' || t.status === 'completed');
                 const totalOrgRevenue = allOrgTransactions.reduce((sum: number, t: any) => {
-                    return sum + calculateTransactionAmounts(t).producerAmount;
+                    // Usar as mesmas configurações de taxas para calcular o valor do produtor
+                    return sum + calculateTransactionAmounts(t, customFeeSettings).producerAmount;
                 }, 0);
 
+                // ... resto do código permanece igual
                 // Calcular proporção dos saques que devem ser descontados deste evento
                 const eventProportion = totalOrgRevenue > 0 ? totalProducerAmount / totalOrgRevenue : 0;
                 const eventWithdrawalDeduction = (withdrawalsData?.totalWithdrawn || 0) * eventProportion;
@@ -191,6 +208,7 @@ export default function EventsPage() {
                 };
             }
 
+            // ... resto da função permanece igual
             return {
                 ...event,
                 revenue: 0,
