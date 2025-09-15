@@ -180,12 +180,20 @@ export default function EventsPage() {
                 // ... resto da função permanece igual
                 // Calcular proporção deste evento no total da organização
                 const allOrgTransactions = transactions.filter((t: any) => t.status === 'paid' || t.status === 'completed');
+                
+                // CORREÇÃO: Calcular o valor do produtor de cada transação usando as configurações corretas do seu evento
                 const totalOrgRevenue = allOrgTransactions.reduce((sum: number, t: any) => {
-                    // Usar as mesmas configurações de taxas para calcular o valor do produtor
-                    return sum + calculateTransactionAmounts(t, customFeeSettings).producerAmount;
+                    // Buscar o evento desta transação para usar suas configurações de taxa
+                    const transactionEvent = eventsData?.events?.find((e: any) => e._id === t.eventId);
+                    const transactionFeeSettings: CustomFeeSettings | null = transactionEvent?.feeSettings ? {
+                        pixFeePercentage: transactionEvent.feeSettings.pixFeePercentage,
+                        cardFeePercentage: transactionEvent.feeSettings.cardFeePercentage,
+                        useCustomFees: true
+                    } : null;
+                    
+                    return sum + calculateTransactionAmounts(t, transactionFeeSettings).producerAmount;
                 }, 0);
 
-                // ... resto do código permanece igual
                 // Calcular proporção dos saques que devem ser descontados deste evento
                 const eventProportion = totalOrgRevenue > 0 ? totalProducerAmount / totalOrgRevenue : 0;
                 const eventWithdrawalDeduction = (withdrawalsData?.totalWithdrawn || 0) * eventProportion;
