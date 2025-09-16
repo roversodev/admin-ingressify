@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Ticket, Search, Filter, Eye, Download, CheckCircle, XCircle, Clock, RefreshCw, Hash, Calendar, DollarSign, User, Mail, Phone, CreditCard, RotateCcw } from 'lucide-react';
+import { Ticket, Search, Filter, Eye, Download, CheckCircle, XCircle, Clock, RefreshCw, Hash, Calendar, DollarSign, User, Mail, Phone, CreditCard, RotateCcw, ArrowRightLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import Spinner from '@/components/Spinner';
 import jsPDF from 'jspdf';
@@ -22,7 +22,7 @@ interface TicketData {
     eventId: string;
     eventName: string;
     ticketTypeName: string;
-    status: 'valid' | 'used' | 'refunded' | 'cancelled';
+    status: 'valid' | 'used' | 'refunded' | 'cancelled' | 'transfered';
     purchasedAt: number;
     totalAmount: number;
     amount: number;
@@ -87,7 +87,8 @@ export default function IngressosPage() {
         valid: filteredTickets.filter((t: any) => t.status === 'valid').length,
         used: filteredTickets.filter((t: any) => t.status === 'used').length,
         refunded: filteredTickets.filter((t: any) => t.status === 'refunded').length,
-        cancelled: filteredTickets.filter((t: any) => t.status === 'cancelled').length
+        cancelled: filteredTickets.filter((t: any) => t.status === 'cancelled').length,
+        transfered: filteredTickets.filter((t: any) => t.status === 'transfered').length
     };
 
     const handleStatusChange = async (ticketId: string, newStatus: string) => {
@@ -100,7 +101,7 @@ export default function IngressosPage() {
             await updateTicketStatus({
                 userId: user.id,
                 ticketId: ticketId as any,
-                newStatus: newStatus as 'valid' | 'used' | 'refunded' | 'cancelled',
+                newStatus: newStatus as 'valid' | 'used' | 'refunded' | 'cancelled' | 'transfered',
                 reason: `Status alterado para ${newStatus} pelo administrador`
             });
             toast.success('Status do ingresso atualizado com sucesso!');
@@ -116,6 +117,7 @@ export default function IngressosPage() {
             case 'used': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
             case 'refunded': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
             case 'cancelled': return 'bg-red-500/20 text-red-400 border-red-500/30';
+            case 'transfered': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
             default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
         }
     };
@@ -126,6 +128,7 @@ export default function IngressosPage() {
             case 'used': return <Eye className="w-4 h-4" />;
             case 'refunded': return <RotateCcw className="w-4 h-4" />;
             case 'cancelled': return <XCircle className="w-4 h-4" />;
+            case 'transfered': return <ArrowRightLeft className="w-4 h-4" />;
             default: return <Clock className="w-4 h-4" />;
         }
     };
@@ -483,6 +486,7 @@ export default function IngressosPage() {
                                 <SelectItem value="used">Utilizados</SelectItem>
                                 <SelectItem value="refunded">Reembolsados</SelectItem>
                                 <SelectItem value="cancelled">Cancelados</SelectItem>
+                                <SelectItem value="transfered">Transferidos</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

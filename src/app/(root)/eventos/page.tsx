@@ -133,9 +133,10 @@ export default function EventsPage() {
                 userId: user?.id || ""
             });
 
-            // Buscar saques completados da organização
+            // Buscar saques completados ESPECÍFICOS DESTE EVENTO
             const withdrawalsData = await getOrganizationCompletedWithdrawals({
                 organizationId,
+                eventId: event._id // Filtrar saques por evento específico
             });
 
             if (transactions && transactions.length > 0) {
@@ -177,30 +178,23 @@ export default function EventsPage() {
                     }
                 });
 
-                // ... resto da função permanece igual
-                // Calcular proporção deste evento no total da organização
-                const allOrgTransactions = transactions.filter((t: any) => t.status === 'paid' || t.status === 'completed');
+                // Descontar saques específicos deste evento
+                const eventWithdrawals = withdrawalsData?.totalWithdrawn || 0;
                 
-                // CORREÇÃO: Calcular o valor do produtor de cada transação usando as configurações corretas do seu evento
-                const totalOrgRevenue = allOrgTransactions.reduce((sum: number, t: any) => {
-                    // Buscar o evento desta transação para usar suas configurações de taxa
-                    const transactionEvent = eventsData?.events?.find((e: any) => e._id === t.eventId);
-                    const transactionFeeSettings: CustomFeeSettings | null = transactionEvent?.feeSettings ? {
-                        pixFeePercentage: transactionEvent.feeSettings.pixFeePercentage,
-                        cardFeePercentage: transactionEvent.feeSettings.cardFeePercentage,
-                        useCustomFees: true
-                    } : null;
+                // Aplicar desconto dos saques nos saldos disponíveis
+                // Distribuir proporcionalmente entre PIX e Cartão baseado nos valores disponíveis
+                const totalAvailableBeforeWithdrawals = pixAvailable + cardAvailable;
+                
+                if (totalAvailableBeforeWithdrawals > 0 && eventWithdrawals > 0) {
+                    const pixProportion = pixAvailable / totalAvailableBeforeWithdrawals;
+                    const cardProportion = cardAvailable / totalAvailableBeforeWithdrawals;
                     
-                    return sum + calculateTransactionAmounts(t, transactionFeeSettings).producerAmount;
-                }, 0);
-
-                // Calcular proporção dos saques que devem ser descontados deste evento
-                const eventProportion = totalOrgRevenue > 0 ? totalProducerAmount / totalOrgRevenue : 0;
-                const eventWithdrawalDeduction = (withdrawalsData?.totalWithdrawn || 0) * eventProportion;
-
-                // Aplicar desconto proporcional nos saldos disponíveis
-                const adjustedPixAvailable = Math.max(0, pixAvailable - (eventWithdrawalDeduction * (pixAvailable / (pixAvailable + cardAvailable || 1))));
-                const adjustedCardAvailable = Math.max(0, cardAvailable - (eventWithdrawalDeduction * (cardAvailable / (pixAvailable + cardAvailable || 1))));
+                    const pixWithdrawalDeduction = Math.min(pixAvailable, eventWithdrawals * pixProportion);
+                    const cardWithdrawalDeduction = Math.min(cardAvailable, eventWithdrawals * cardProportion);
+                    
+                    pixAvailable = Math.max(0, pixAvailable - pixWithdrawalDeduction);
+                    cardAvailable = Math.max(0, cardAvailable - cardWithdrawalDeduction);
+                }
 
                 return {
                     ...event,
@@ -209,14 +203,13 @@ export default function EventsPage() {
                     platformFees: totalPlatformFees,
                     transactionCount: eventTransactions.length,
                     paidTransactionCount: paidTransactions.length,
-                    pixAvailable: adjustedPixAvailable,
+                    pixAvailable,
                     cardInRelease,
-                    cardAvailable: adjustedCardAvailable,
-                    totalWithdrawn: eventWithdrawalDeduction // Para debug/informação
+                    cardAvailable,
+                    totalWithdrawn: eventWithdrawals
                 };
             }
 
-            // ... resto da função permanece igual
             return {
                 ...event,
                 revenue: 0,

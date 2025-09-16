@@ -450,6 +450,7 @@ export type PublicApiType = {
       "public",
       {
         amount: number;
+        eventId?: Id<"events">;
         organizationId: Id<"organizations">;
         pixKeyIndex: number;
         userId: string;
@@ -1317,7 +1318,7 @@ export type PublicApiType = {
       "mutation",
       "public",
       {
-        newStatus: "valid" | "used" | "refunded" | "cancelled";
+        newStatus: "valid" | "used" | "refunded" | "cancelled" | "transfered";
         reason?: string;
         ticketId: Id<"tickets">;
         userId: string;
@@ -1351,7 +1352,7 @@ export type PublicApiType = {
     getOrganizationCompletedWithdrawals: FunctionReference<
       "mutation",
       "public",
-      { organizationId: Id<"organizations"> },
+      { eventId?: Id<"events">; organizationId: Id<"organizations"> },
       any
     >;
   };
