@@ -98,18 +98,6 @@ export type PublicApiType = {
       any
     >;
     getBySlug: FunctionReference<"query", "public", { slug: string }, any>;
-    purchaseMultipleTickets: FunctionReference<
-      "mutation",
-      "public",
-      {
-        eventId: Id<"events">;
-        paymentInfo: { paymentIntentId: string; totalAmount: number };
-        quantity: number;
-        ticketTypeId: Id<"ticketTypes">;
-        userId: string;
-      },
-      any
-    >;
     getUserTickets: FunctionReference<
       "query",
       "public",
@@ -204,7 +192,6 @@ export type PublicApiType = {
         eventId: Id<"events">;
         paymentIntentId: string;
         promoterCode?: string;
-        stripeSessionId: string;
         ticketSelections: Array<{
           quantity: number;
           ticketTypeId: Id<"ticketTypes">;
@@ -308,6 +295,34 @@ export type PublicApiType = {
       { userId: string },
       any
     >;
+    updateEventSettings: FunctionReference<
+      "mutation",
+      "public",
+      {
+        allowTicketTransfers?: boolean;
+        customScripts?: {
+          googleAnalytics?: string;
+          googleTagManager?: string;
+          metaPixel?: string;
+        };
+        eventId: Id<"events">;
+        isPublicOnHomepage?: boolean;
+        userId: string;
+      },
+      any
+    >;
+    getEventCourtesyStats: FunctionReference<
+      "query",
+      "public",
+      { eventId: Id<"events"> },
+      any
+    >;
+    getEventCourtesyDetails: FunctionReference<
+      "query",
+      "public",
+      { eventId: Id<"events"> },
+      any
+    >;
   };
   migrations: {
     addSlugsToEvents: {
@@ -333,7 +348,10 @@ export type PublicApiType = {
           key: string;
           keyType: "cpf" | "cnpj" | "email" | "phone" | "random";
         }>;
-        responsibleDocument: string;
+        recipientCode?: string;
+        recipientId?: string;
+        recipientType?: "PF" | "PJ";
+        responsibleDocument?: string;
         responsibleName: string;
         userId: string;
       },
@@ -360,6 +378,12 @@ export type PublicApiType = {
       "mutation",
       "public",
       { inviteToken: string; userId: string },
+      any
+    >;
+    checkInviteStatus: FunctionReference<
+      "query",
+      "public",
+      { inviteToken: string },
       any
     >;
     checkUserHasOrganization: FunctionReference<
@@ -439,6 +463,9 @@ export type PublicApiType = {
           key: string;
           keyType: "cpf" | "cnpj" | "email" | "phone" | "random";
         }>;
+        recipientCode?: string;
+        recipientId?: string;
+        recipientType?: "PF" | "PJ";
         responsibleDocument: string;
         responsibleName: string;
         userId: string;
@@ -470,6 +497,26 @@ export type PublicApiType = {
       any
     >;
     getOrganizationBuyersData: FunctionReference<
+      "query",
+      "public",
+      { organizationId: Id<"organizations">; userId: string },
+      any
+    >;
+    getOrganizationTransactionsPaginated: FunctionReference<
+      "query",
+      "public",
+      {
+        eventId?: Id<"events">;
+        limit: number;
+        organizationId: Id<"organizations">;
+        page: number;
+        paymentMethod?: string;
+        status?: string;
+        userId: string;
+      },
+      any
+    >;
+    getOrganizationFinancialSummary: FunctionReference<
       "query",
       "public",
       { organizationId: Id<"organizations">; userId: string },
@@ -652,6 +699,12 @@ export type PublicApiType = {
       { storageId: Id<"_storage"> },
       any
     >;
+    getUrlOnce: FunctionReference<
+      "action",
+      "public",
+      { storageId: Id<"_storage"> },
+      any
+    >;
     deleteImage: FunctionReference<
       "mutation",
       "public",
@@ -676,6 +729,15 @@ export type PublicApiType = {
       "mutation",
       "public",
       {
+        activationSettings?: {
+          activateAt?: number;
+          activationType: "manual" | "datetime" | "soldout" | "percentage";
+          deactivateAt?: number;
+          deactivationType?: "never" | "datetime" | "soldout";
+          enabled: boolean;
+          triggerPercentage?: number;
+          triggerTicketTypeId?: Id<"ticketTypes">;
+        };
         description?: string;
         eventId: Id<"events">;
         isActive?: boolean;
@@ -698,6 +760,15 @@ export type PublicApiType = {
       "mutation",
       "public",
       {
+        activationSettings?: {
+          activateAt?: number;
+          activationType: "manual" | "datetime" | "soldout" | "percentage";
+          deactivateAt?: number;
+          deactivationType?: "never" | "datetime" | "soldout";
+          enabled: boolean;
+          triggerPercentage?: number;
+          triggerTicketTypeId?: Id<"ticketTypes">;
+        };
         description?: string;
         isActive?: boolean;
         isCourtesy?: boolean;
@@ -717,6 +788,12 @@ export type PublicApiType = {
       any
     >;
     getAllEventTicketTypesIncludingCourtesy: FunctionReference<
+      "query",
+      "public",
+      { eventId: Id<"events"> },
+      any
+    >;
+    getEventCourtesyTicketTypes: FunctionReference<
       "query",
       "public",
       { eventId: Id<"events"> },
@@ -777,18 +854,6 @@ export type PublicApiType = {
       "mutation",
       "public",
       { eventId: Id<"events">; ticketId: Id<"tickets">; userId: string },
-      any
-    >;
-    getTicketsByStripeSession: FunctionReference<
-      "query",
-      "public",
-      { stripeSessionId: string },
-      any
-    >;
-    getTicketsByStripeSessionWithDetails: FunctionReference<
-      "query",
-      "public",
-      { stripeSessionId: string },
       any
     >;
     getTicketsByIds: FunctionReference<
@@ -905,6 +970,18 @@ export type PublicApiType = {
       { transferRequestId: Id<"transferRequests"> },
       any
     >;
+    acceptTransferSimple: FunctionReference<
+      "mutation",
+      "public",
+      { toUserId: string; transferRequestId: Id<"transferRequests"> },
+      any
+    >;
+    rejectTransfer: FunctionReference<
+      "mutation",
+      "public",
+      { transferRequestId: Id<"transferRequests"> },
+      any
+    >;
     getUserTransfers: FunctionReference<
       "query",
       "public",
@@ -921,18 +998,6 @@ export type PublicApiType = {
       "query",
       "public",
       { userEmail: string },
-      any
-    >;
-    acceptTransferSimple: FunctionReference<
-      "mutation",
-      "public",
-      { toUserId: string; transferRequestId: Id<"transferRequests"> },
-      any
-    >;
-    rejectTransfer: FunctionReference<
-      "mutation",
-      "public",
-      { transferRequestId: Id<"transferRequests"> },
       any
     >;
     getPendingTransferForTicket: FunctionReference<
@@ -1309,7 +1374,7 @@ export type PublicApiType = {
       {
         eventId?: Id<"events">;
         limit?: number;
-        status?: "valid" | "used" | "refunded" | "cancelled";
+        status?: "valid" | "used" | "refunded" | "cancelled" | "transfered";
         userId: string;
       },
       any
@@ -1353,6 +1418,24 @@ export type PublicApiType = {
       "mutation",
       "public",
       { eventId?: Id<"events">; organizationId: Id<"organizations"> },
+      any
+    >;
+    getOrganizationTransactionsPaginated: FunctionReference<
+      "query",
+      "public",
+      {
+        eventId?: Id<"events">;
+        limit?: number;
+        organizationId: Id<"organizations">;
+        page?: number;
+        userId: string;
+      },
+      any
+    >;
+    getAllTransactionsPaginated: FunctionReference<
+      "query",
+      "public",
+      { eventId?: Id<"events">; limit?: number; page?: number; userId: string },
       any
     >;
   };
@@ -1570,6 +1653,31 @@ export type PublicApiType = {
       "mutation",
       "public",
       { eventId: Id<"events"> },
+      any
+    >;
+  };
+  ticketActivation: {
+    processAutomaticActivations: FunctionReference<
+      "mutation",
+      "public",
+      { eventId: Id<"events"> },
+      any
+    >;
+    updateActivationSettings: FunctionReference<
+      "mutation",
+      "public",
+      {
+        settings?: {
+          activateAt?: number;
+          activationType: "manual" | "datetime" | "soldout" | "percentage";
+          deactivateAt?: number;
+          deactivationType?: "never" | "datetime" | "soldout";
+          enabled: boolean;
+          triggerPercentage?: number;
+          triggerTicketTypeId?: Id<"ticketTypes">;
+        };
+        ticketTypeId: Id<"ticketTypes">;
+      },
       any
     >;
   };

@@ -42,6 +42,7 @@ export default function IngressosPage() {
     const [selectedStatus, setSelectedStatus] = useState<string>('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedEvent, setSelectedEvent] = useState<string>('all');
+    const [selectedTicketType, setSelectedTicketType] = useState<string>('all');
     const [selectedTicket, setSelectedTicket] = useState<TicketData | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
@@ -51,6 +52,11 @@ export default function IngressosPage() {
     // Buscar eventos para o filtro
     const eventsData = useQuery(api.admin.listAllEvents,
         user?.id ? { userId: user.id } : "skip"
+    );
+
+    // Buscar tipos de ingresso do evento selecionado
+    const ticketTypesData = useQuery(api.ticketTypes.getAllEventTicketTypesIncludingCourtesy,
+        user?.id && selectedEvent !== 'all' ? { eventId: selectedEvent as any } : "skip"
     );
 
     // Buscar todos os ingressos da plataforma (SEM searchTerm)
@@ -66,8 +72,9 @@ export default function IngressosPage() {
     // Verificar se os dados estão carregando - CORRIGIDO
     const isLoadingTickets = !user?.id || allTicketsData === undefined;
     const isLoadingEvents = !user?.id || eventsData === undefined;
+    const isLoadingTicketTypes = selectedEvent !== 'all' && (!user?.id || ticketTypesData === undefined);
 
-    // Filtrar ingressos localmente (incluindo busca por texto)
+    // Filtrar ingressos localmente (incluindo busca por texto e tipo de ingresso)
     const filteredTickets = (allTicketsData || []).filter((ticket: any) => {
         const matchesSearch = !searchTerm ||
             ticket.eventName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -77,8 +84,9 @@ export default function IngressosPage() {
 
         const matchesStatus = selectedStatus === 'all' || ticket.status === selectedStatus;
         const matchesEvent = selectedEvent === 'all' || ticket.eventId === selectedEvent;
+        const matchesTicketType = selectedTicketType === 'all' || ticket.ticketTypeName === selectedTicketType;
 
-        return matchesSearch && matchesStatus && matchesEvent;
+        return matchesSearch && matchesStatus && matchesEvent && matchesTicketType;
     });
 
     // Estatísticas dos ingressos
@@ -149,6 +157,12 @@ export default function IngressosPage() {
             hour: '2-digit',
             minute: '2-digit'
         });
+    };
+
+    // Reset ticket type filter when event changes
+    const handleEventChange = (eventId: string) => {
+        setSelectedEvent(eventId);
+        setSelectedTicketType('all'); // Reset ticket type when event changes
     };
 
     if (!isLoaded) {
@@ -462,7 +476,7 @@ export default function IngressosPage() {
                             </div>
                         </div>
 
-                        <Select value={selectedEvent} onValueChange={setSelectedEvent} disabled={isLoadingEvents}>
+                        <Select value={selectedEvent} onValueChange={handleEventChange} disabled={isLoadingEvents}>
                             <SelectTrigger className="w-full md:w-[200px] bg-background border-border text-white">
                                 <SelectValue placeholder="Selecionar evento" />
                             </SelectTrigger>
@@ -475,6 +489,23 @@ export default function IngressosPage() {
                                 ))}
                             </SelectContent>
                         </Select>
+
+                        {/* Filtro por tipo de ingresso - só aparece quando um evento está selecionado */}
+                        {selectedEvent !== 'all' && (
+                            <Select value={selectedTicketType} onValueChange={setSelectedTicketType} disabled={isLoadingTicketTypes}>
+                                <SelectTrigger className="w-fit bg-background border-border text-white">
+                                    <SelectValue placeholder="Tipo de ingresso" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos os tipos</SelectItem>
+                                    {ticketTypesData?.map((ticketType: any) => (
+                                        <SelectItem key={ticketType._id} value={ticketType.name}>
+                                            {ticketType.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
 
                         <Select value={selectedStatus} onValueChange={setSelectedStatus} disabled={isLoadingTickets}>
                             <SelectTrigger className="w-full md:w-[150px] bg-background border-border text-white">
