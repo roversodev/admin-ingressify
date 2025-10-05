@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Ticket, Search, Filter, Eye, Download, CheckCircle, XCircle, Clock, RefreshCw, Hash, Calendar, DollarSign, User, Mail, Phone, CreditCard, RotateCcw, ArrowRightLeft } from 'lucide-react';
+import { Ticket, Search, Filter, Eye, Download, CheckCircle, XCircle, Clock, RefreshCw, Hash, Calendar, DollarSign, User, Mail, Phone, CreditCard, RotateCcw, ArrowRightLeft, IdCard } from 'lucide-react';
 import { toast } from 'sonner';
 import Spinner from '@/components/Spinner';
 import jsPDF from 'jspdf';
@@ -684,6 +684,11 @@ export default function IngressosPage() {
                                                 <Mail className="w-4 h-4 text-gray-400" />
                                                 <span className="text-sm text-gray-400">Email:</span>
                                                 <span className="text-white">{selectedTicket.userEmail || 'N/A'}</span>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <IdCard className="w-4 h-4 text-gray-400" />
+                                                <span className="text-sm text-gray-400">CPF:</span>
+                                                <span className="text-white">{selectedTicket.userCpf || 'N/A'}</span>
                                             </div>
                                             <div className="flex items-center space-x-2">
                                                 <Phone className="w-4 h-4 text-gray-400" />
