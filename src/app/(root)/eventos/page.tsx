@@ -157,6 +157,8 @@ export default function EventsPage() {
                 let pixAvailable = 0;
                 let cardInRelease = 0;
                 let cardAvailable = 0;
+                let pixRevenue = 0;
+                let cardRevenue = 0;
 
                 const paidTransactions = eventTransactions.filter((t: any) => t.status === 'paid' || t.status === 'completed');
 
@@ -166,10 +168,12 @@ export default function EventsPage() {
                     totalProducerAmount += amounts.producerAmount;
                     totalPlatformFees += amounts.platformFee;
                     
-                    // Calcular saldos por método de pagamento
+                    // Calcular faturamento por método de pagamento
                     if (transaction.paymentMethod === 'pix') {
+                        pixRevenue += amounts.totalAmount;
                         pixAvailable += amounts.producerAmount;
                     } else {
+                        cardRevenue += amounts.totalAmount;
                         if (isCardTransactionReleased(transaction)) {
                             cardAvailable += amounts.producerAmount;
                         } else {
@@ -206,6 +210,8 @@ export default function EventsPage() {
                     pixAvailable,
                     cardInRelease,
                     cardAvailable,
+                    pixRevenue,
+                    cardRevenue,
                     totalWithdrawn: eventWithdrawals
                 };
             }
@@ -220,6 +226,8 @@ export default function EventsPage() {
                 pixAvailable: 0,
                 cardInRelease: 0,
                 cardAvailable: 0,
+                pixRevenue: 0,
+                cardRevenue: 0,
                 totalWithdrawn: 0
             };
         } catch (error) {
@@ -234,6 +242,8 @@ export default function EventsPage() {
                 pixAvailable: 0,
                 cardInRelease: 0,
                 cardAvailable: 0,
+                pixRevenue: 0,
+                cardRevenue: 0,
                 totalWithdrawn: 0
             };
         }
@@ -682,6 +692,43 @@ export default function EventsPage() {
                                             </div>
                                             <p className="text-xs text-[#A3A3A3]">
                                                 Para saque
+                                            </p>
+                                        </CardContent>
+                                    </Card>
+                                </div>
+
+                                {/* Faturamento por Método de Pagamento */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                    <Card>
+                                        <CardHeader className="pb-2">
+                                            <CardTitle className="text-sm font-medium text-white flex items-center">
+                                                <Smartphone className="h-4 w-4 mr-2" />
+                                                Faturamento PIX
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="text-2xl font-bold text-green-400">
+                                                {formatCurrency(selectedEvent.pixRevenue || 0)}
+                                            </div>
+                                            <p className="text-xs text-[#A3A3A3]">
+                                                Receita bruta via PIX
+                                            </p>
+                                        </CardContent>
+                                    </Card>
+
+                                    <Card>
+                                        <CardHeader className="pb-2">
+                                            <CardTitle className="text-sm font-medium text-white flex items-center">
+                                                <CreditCard className="h-4 w-4 mr-2" />
+                                                Faturamento Cartão
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="text-2xl font-bold text-blue-400">
+                                                {formatCurrency(selectedEvent.cardRevenue || 0)}
+                                            </div>
+                                            <p className="text-xs text-[#A3A3A3]">
+                                                Receita bruta via cartão
                                             </p>
                                         </CardContent>
                                     </Card>
