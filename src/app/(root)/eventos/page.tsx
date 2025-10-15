@@ -159,6 +159,8 @@ export default function EventsPage() {
                 let cardAvailable = 0;
                 let pixRevenue = 0;
                 let cardRevenue = 0;
+                let pixTransactionCount = 0;
+                let cardTransactionCount = 0;
 
                 const paidTransactions = eventTransactions.filter((t: any) => t.status === 'paid' || t.status === 'completed');
 
@@ -168,12 +170,14 @@ export default function EventsPage() {
                     totalProducerAmount += amounts.producerAmount;
                     totalPlatformFees += amounts.platformFee;
                     
-                    // Calcular faturamento por método de pagamento
+                    // Calcular faturamento e contagem por método de pagamento
                     if (transaction.paymentMethod === 'pix') {
                         pixRevenue += amounts.totalAmount;
                         pixAvailable += amounts.producerAmount;
+                        pixTransactionCount++;
                     } else {
                         cardRevenue += amounts.totalAmount;
+                        cardTransactionCount++;
                         if (isCardTransactionReleased(transaction)) {
                             cardAvailable += amounts.producerAmount;
                         } else {
@@ -212,6 +216,8 @@ export default function EventsPage() {
                     cardAvailable,
                     pixRevenue,
                     cardRevenue,
+                    pixTransactionCount,
+                    cardTransactionCount,
                     totalWithdrawn: eventWithdrawals
                 };
             }
@@ -228,6 +234,8 @@ export default function EventsPage() {
                 cardAvailable: 0,
                 pixRevenue: 0,
                 cardRevenue: 0,
+                pixTransactionCount: 0,
+                cardTransactionCount: 0,
                 totalWithdrawn: 0
             };
         } catch (error) {
@@ -244,6 +252,8 @@ export default function EventsPage() {
                 cardAvailable: 0,
                 pixRevenue: 0,
                 cardRevenue: 0,
+                pixTransactionCount: 0,
+                cardTransactionCount: 0,
                 totalWithdrawn: 0
             };
         }
@@ -711,7 +721,7 @@ export default function EventsPage() {
                                                 {formatCurrency(selectedEvent.pixRevenue || 0)}
                                             </div>
                                             <p className="text-xs text-[#A3A3A3]">
-                                                Receita bruta via PIX
+                                                {selectedEvent.pixTransactionCount || 0} transações via PIX
                                             </p>
                                         </CardContent>
                                     </Card>
@@ -728,7 +738,7 @@ export default function EventsPage() {
                                                 {formatCurrency(selectedEvent.cardRevenue || 0)}
                                             </div>
                                             <p className="text-xs text-[#A3A3A3]">
-                                                Receita bruta via cartão
+                                                {selectedEvent.cardTransactionCount || 0} transações via cartão
                                             </p>
                                         </CardContent>
                                     </Card>
