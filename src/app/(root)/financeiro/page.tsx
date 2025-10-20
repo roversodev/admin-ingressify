@@ -67,8 +67,7 @@ export default function FinanceiroPage() {
                     <CardContent>
                         {financialMetrics ? (
                             <div className="text-2xl font-bold">
-                                {(parseFloat(financialMetrics.summary.pixCost.replace(/[^0-9,-]/g, '').replace(',', '.')) +
-                                    parseFloat(financialMetrics.summary.cardCost.replace(/[^0-9,-]/g, '').replace(',', '.'))).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                {financialMetrics.summary.processingCosts}
                             </div>
                         ) : (
                             <Skeleton className="h-8 w-28" />
@@ -123,11 +122,11 @@ export default function FinanceiroPage() {
                                                 <span className="font-medium">{financialMetrics.summary.platformRevenue}</span>
                                             </div>
                                             <div className="flex justify-between items-center pb-2 border-b border-border/40">
-                                                <span className="text-muted-foreground">Custo PIX (1%):</span>
+                                                <span className="text-muted-foreground">Custo PIX (0.69%):</span>
                                                 <span className="font-medium">{financialMetrics.summary.pixCost}</span>
                                             </div>
                                             <div className="flex justify-between items-center pb-2 border-b border-border/40">
-                                                <span className="text-muted-foreground">Custo Cartão (4.49%):</span>
+                                                <span className="text-muted-foreground">Custo Cartão (4.01%-19.40% + R$0,50):</span>
                                                 <span className="font-medium">{financialMetrics.summary.cardCost}</span>
                                             </div>
                                             <div className="flex justify-between font-bold pt-1">
