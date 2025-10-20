@@ -52,6 +52,12 @@ export type PublicApiType = {
       { couponId: Id<"coupons"> },
       any
     >;
+    incrementCouponUsage: FunctionReference<
+      "mutation",
+      "public",
+      { couponCode: string; eventId: Id<"events"> },
+      any
+    >;
     getEventCoupons: FunctionReference<
       "query",
       "public",
@@ -97,7 +103,19 @@ export type PublicApiType = {
       { eventId: Id<"events"> },
       any
     >;
+    getEventBasicInfo: FunctionReference<
+      "query",
+      "public",
+      { eventId: Id<"events"> },
+      any
+    >;
     getBySlug: FunctionReference<"query", "public", { slug: string }, any>;
+    getEventMetrics: FunctionReference<
+      "query",
+      "public",
+      { eventId: Id<"events"> },
+      any
+    >;
     getUserTickets: FunctionReference<
       "query",
       "public",
@@ -117,6 +135,24 @@ export type PublicApiType = {
       any
     >;
     getEventAvailability: FunctionReference<
+      "query",
+      "public",
+      { eventId: Id<"events"> },
+      any
+    >;
+    getEventAvailabilityValidar: FunctionReference<
+      "query",
+      "public",
+      { eventId: Id<"events"> },
+      any
+    >;
+    getEventAvailabilityEventPage: FunctionReference<
+      "query",
+      "public",
+      { eventId: Id<"events"> },
+      any
+    >;
+    getEventAvailabilityTotalAvailable: FunctionReference<
       "query",
       "public",
       { eventId: Id<"events"> },
@@ -232,10 +268,10 @@ export type PublicApiType = {
       { eventId: Id<"events"> },
       any
     >;
-    getEventTicketHolders: FunctionReference<
+    getEventTicketHoldersOptimized: FunctionReference<
       "query",
       "public",
-      { eventId: Id<"events"> },
+      { eventId: Id<"events">; limit?: number },
       any
     >;
     purchaseTicketsWithFreePay: FunctionReference<
@@ -321,6 +357,73 @@ export type PublicApiType = {
       "query",
       "public",
       { eventId: Id<"events"> },
+      any
+    >;
+    getEventPageData: FunctionReference<
+      "query",
+      "public",
+      { eventId: Id<"events"> },
+      any
+    >;
+    getEventCheckoutData: FunctionReference<
+      "query",
+      "public",
+      { eventId: Id<"events"> },
+      any
+    >;
+    getEventBasicData: FunctionReference<
+      "query",
+      "public",
+      { eventId: Id<"events"> },
+      any
+    >;
+    getEventConfigData: FunctionReference<
+      "query",
+      "public",
+      { eventId: Id<"events"> },
+      any
+    >;
+    getEventEditData: FunctionReference<
+      "query",
+      "public",
+      { eventId: Id<"events"> },
+      any
+    >;
+    getEventEmailData: FunctionReference<
+      "query",
+      "public",
+      { eventId: Id<"events"> },
+      any
+    >;
+    getEventName: FunctionReference<
+      "query",
+      "public",
+      { eventId: Id<"events"> },
+      any
+    >;
+    getEventStartLocName: FunctionReference<
+      "query",
+      "public",
+      { eventId: Id<"events"> },
+      any
+    >;
+    getEventTicketShow: FunctionReference<
+      "query",
+      "public",
+      { eventId: Id<"events"> },
+      any
+    >;
+    getOnFireEvents: FunctionReference<"query", "public", any, any>;
+    getPastEventsWithPagination: FunctionReference<
+      "query",
+      "public",
+      { limit: number; page: number },
+      any
+    >;
+    getUpcomingEventsAll: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
       any
     >;
   };
@@ -487,7 +590,11 @@ export type PublicApiType = {
     getOrganizationWithdrawals: FunctionReference<
       "query",
       "public",
-      { organizationId: Id<"organizations">; userId: string },
+      {
+        eventId?: Id<"events">;
+        organizationId: Id<"organizations">;
+        userId: string;
+      },
       any
     >;
     getOrganizationDemographicStats: FunctionReference<
@@ -519,7 +626,23 @@ export type PublicApiType = {
     getOrganizationFinancialSummary: FunctionReference<
       "query",
       "public",
-      { organizationId: Id<"organizations">; userId: string },
+      {
+        eventId?: Id<"events">;
+        organizationId: Id<"organizations">;
+        userId: string;
+      },
+      any
+    >;
+    getOrganizationWithdrawalsPaginated: FunctionReference<
+      "query",
+      "public",
+      {
+        eventId?: Id<"events">;
+        limit: number;
+        organizationId: Id<"organizations">;
+        page: number;
+        userId: string;
+      },
       any
     >;
   };
@@ -1436,6 +1559,18 @@ export type PublicApiType = {
       "query",
       "public",
       { eventId?: Id<"events">; limit?: number; page?: number; userId: string },
+      any
+    >;
+    getCreditCardInstallmentStats: FunctionReference<
+      "query",
+      "public",
+      { endDate?: number; startDate?: number; userId: string },
+      any
+    >;
+    getInstallmentDistributionStats: FunctionReference<
+      "query",
+      "public",
+      { endDate?: number; startDate?: number; userId: string },
       any
     >;
   };

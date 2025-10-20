@@ -5,6 +5,8 @@ import { Chart03 } from "@/components/chart-03";
 import { Chart04 } from "@/components/chart-04";
 import { Chart05 } from "@/components/chart-05";
 import { Chart06 } from "@/components/chart-06";
+import { Chart07 } from "@/components/chart-07";
+import { Chart08 } from "@/components/chart-08";
 import Spinner from "@/components/Spinner";
 import { useUser } from "@clerk/nextjs";
 
@@ -22,6 +24,8 @@ export default function Page() {
       <Chart04 />
       <Chart05 />
       <Chart06 />
+      <Chart07 />
+      <Chart08 />
     </div>
   );
 }
