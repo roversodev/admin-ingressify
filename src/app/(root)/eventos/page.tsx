@@ -78,14 +78,14 @@ const calculateTransactionAmounts = (transaction: any, eventFeeSettings?: Custom
     };
 };
 
-// Função para verificar se transação de cartão foi liberada (D+14)
+// Função para verificar se transação de cartão foi liberada (D+15)
 const isCardTransactionReleased = (transaction: any): boolean => {
     if (transaction.paymentMethod === 'pix') return true;
     if (!transaction.paidAt && !transaction.createdAt) return false;
     
     const paidDate = new Date(transaction.paidAt || transaction.createdAt);
     const releaseDate = new Date(paidDate);
-    releaseDate.setDate(releaseDate.getDate() + 14);
+    releaseDate.setDate(releaseDate.getDate() + 15);
     
     return new Date() >= releaseDate;
 };
@@ -435,7 +435,7 @@ export default function EventsPage() {
                             {formatCurrency(totalCardInRelease)}
                         </div>
                         <p className="text-xs text-[#A3A3A3]">
-                            Aguardando D+14
+                            Aguardando D+15
                         </p>
                     </CardContent>
                 </Card>
@@ -779,7 +779,7 @@ export default function EventsPage() {
                                                     </span>
                                                 </div>
                                                 <div className="flex justify-between">
-                                                    <span className="text-sm text-[#A3A3A3]">Em liberação (D+14):</span>
+                                                    <span className="text-sm text-[#A3A3A3]">Em liberação (D+15):</span>
                                                     <span className="font-medium text-orange-400">
                                                         {formatCurrency(selectedEvent.cardInRelease || 0)}
                                                     </span>
