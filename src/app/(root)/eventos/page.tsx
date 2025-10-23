@@ -117,7 +117,6 @@ export default function EventsPage() {
     );
 
     // Mutação para buscar transações
-    const getOrganizationTransactionsMutation = useMutation(api.admin.getOrganizationTransactionsMutation);
     const getEventTransactionsMutation = useMutation(api.admin.getEventTransactionsMutation);
     
     // Nova query para buscar saques completados
