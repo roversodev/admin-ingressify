@@ -118,6 +118,7 @@ export default function EventsPage() {
 
     // Mutação para buscar transações
     const getOrganizationTransactionsMutation = useMutation(api.admin.getOrganizationTransactionsMutation);
+    const getEventTransactionsMutation = useMutation(api.admin.getEventTransactionsMutation);
     
     // Nova query para buscar saques completados
     const getOrganizationCompletedWithdrawals = useMutation(api.admin.getOrganizationCompletedWithdrawals);
@@ -125,23 +126,19 @@ export default function EventsPage() {
     // Função para calcular faturamento de um evento
     const calculateEventRevenue = async (event: any) => {
         try {
-            const organizationId = event.organizationId || event._id;
-            
-            // Buscar transações
-            const transactions = await getOrganizationTransactionsMutation({
-                organizationId,
+            // Buscar transações diretamente do evento
+            const eventTransactions = await getEventTransactionsMutation({
+                eventId: event._id,
                 userId: user?.id || ""
             });
 
             // Buscar saques completados ESPECÍFICOS DESTE EVENTO
             const withdrawalsData = await getOrganizationCompletedWithdrawals({
-                organizationId,
+                organizationId: event.organizationId || event._id,
                 eventId: event._id // Filtrar saques por evento específico
             });
 
-            if (transactions && transactions.length > 0) {
-                // Filtrar transações apenas deste evento específico
-                const eventTransactions = transactions.filter((t: any) => t.eventId === event._id);
+            if (eventTransactions && eventTransactions.length > 0) {
 
                 // Converter feeSettings para o formato esperado pela função de cálculo
                 const customFeeSettings: CustomFeeSettings | null = event.feeSettings ? {

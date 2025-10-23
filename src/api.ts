@@ -313,6 +313,12 @@ export type PublicApiType = {
       { organizationId: Id<"organizations"> },
       any
     >;
+    getOrganizationEventsBasic: FunctionReference<
+      "query",
+      "public",
+      { organizationId: Id<"organizations"> },
+      any
+    >;
     getPublishedEvents: FunctionReference<
       "query",
       "public",
@@ -645,6 +651,18 @@ export type PublicApiType = {
       },
       any
     >;
+    getOrganizationCardTransactionsForReleasesPaginated: FunctionReference<
+      "query",
+      "public",
+      {
+        limit: number;
+        organizationId: Id<"organizations">;
+        page: number;
+        status?: string;
+        userId: string;
+      },
+      any
+    >;
   };
   pendingEmails: {
     create: FunctionReference<
@@ -935,6 +953,38 @@ export type PublicApiType = {
         requestedQuantity: number;
         ticketTypeId: Id<"ticketTypes">;
         userId: string;
+      },
+      any
+    >;
+    getTicketTypesForManagement: FunctionReference<
+      "query",
+      "public",
+      { eventId: Id<"events"> },
+      any
+    >;
+    upsertTicketType: FunctionReference<
+      "mutation",
+      "public",
+      {
+        activationSettings?: {
+          activateAt?: number;
+          activationType: "manual" | "datetime" | "soldout" | "percentage";
+          deactivateAt?: number;
+          deactivationType?: "never" | "datetime" | "soldout";
+          enabled: boolean;
+          triggerPercentage?: number;
+          triggerTicketTypeId?: Id<"ticketTypes">;
+        };
+        description?: string;
+        eventId: Id<"events">;
+        isActive?: boolean;
+        isCourtesy?: boolean;
+        maxPerUser?: number;
+        name: string;
+        price: number;
+        sortOrder?: number;
+        ticketTypeId?: Id<"ticketTypes">;
+        totalQuantity: number;
       },
       any
     >;
@@ -1571,6 +1621,12 @@ export type PublicApiType = {
       "query",
       "public",
       { endDate?: number; startDate?: number; userId: string },
+      any
+    >;
+    getEventTransactionsMutation: FunctionReference<
+      "mutation",
+      "public",
+      { eventId: Id<"events">; userId: string },
       any
     >;
   };
