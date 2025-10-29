@@ -101,11 +101,25 @@ export default function EventsPage() {
     const [selectedEvent, setSelectedEvent] = useState<any>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+    
+    // Estados para estatísticas globais dos cards
+    const [globalStats, setGlobalStats] = useState({
+        totalEvents: 0,
+        activeEvents: 0,
+        totalRevenue: 0,
+        totalProducerAmount: 0,
+        totalTransactions: 0,
+        totalPixAvailable: 0,
+        totalCardInRelease: 0,
+        totalCardAvailable: 0,
+        totalAvailableBalance: 0
+    });
+    const [isLoadingGlobalStats, setIsLoadingGlobalStats] = useState(false);
 
     // Debounce do termo de busca
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-    // Buscar eventos usando a função original
+    // Buscar eventos paginados para a tabela
     const eventsData = useQuery(
         api.admin.listAllEvents,
         {
@@ -113,6 +127,17 @@ export default function EventsPage() {
             skip: currentPage * itemsPerPage,
             limit: itemsPerPage,
             searchTerm: debouncedSearchTerm
+        }
+    );
+
+    // Buscar TODOS os eventos para calcular estatísticas globais dos cards
+    const allEventsData = useQuery(
+        api.admin.listAllEvents,
+        {
+            userId: user?.id || "",
+            skip: 0,
+            limit: 1000, // Limite alto para pegar todos os eventos
+            searchTerm: "" // Sem filtro de busca para estatísticas globais
         }
     );
 
@@ -255,7 +280,7 @@ export default function EventsPage() {
         }
     };
 
-    // Calcular faturamento para todos os eventos quando os dados mudarem
+    // Calcular faturamento para eventos da tabela (paginados)
     useEffect(() => {
         const loadEventsWithRevenue = async () => {
             if (eventsData?.events && user?.id) {
@@ -272,6 +297,50 @@ export default function EventsPage() {
 
         loadEventsWithRevenue();
     }, [eventsData, user?.id]);
+
+    // Calcular estatísticas globais para os cards
+    useEffect(() => {
+        const loadGlobalStats = async () => {
+            if (allEventsData?.events && user?.id) {
+                setIsLoadingGlobalStats(true);
+
+                try {
+                    const allEventsWithRevenue = await Promise.all(
+                        allEventsData.events.map(calculateEventRevenue)
+                    );
+
+                    // Calcular estatísticas globais
+                    const totalEvents = allEventsWithRevenue.length;
+                    const activeEvents = allEventsWithRevenue.filter((e: { eventEndDate: number; }) => e.eventEndDate > Date.now()).length;
+                    const totalRevenue = allEventsWithRevenue.reduce((sum, event) => sum + (event.revenue || 0), 0);
+                    const totalProducerAmount = allEventsWithRevenue.reduce((sum, event) => sum + (event.producerAmount || 0), 0);
+                    const totalTransactions = allEventsWithRevenue.reduce((sum, event) => sum + (event.transactionCount || 0), 0);
+                    const totalPixAvailable = allEventsWithRevenue.reduce((sum, event) => sum + (event.pixAvailable || 0), 0);
+                    const totalCardInRelease = allEventsWithRevenue.reduce((sum, event) => sum + (event.cardInRelease || 0), 0);
+                    const totalCardAvailable = allEventsWithRevenue.reduce((sum, event) => sum + (event.cardAvailable || 0), 0);
+                    const totalAvailableBalance = totalPixAvailable + totalCardAvailable;
+
+                    setGlobalStats({
+                        totalEvents,
+                        activeEvents,
+                        totalRevenue,
+                        totalProducerAmount,
+                        totalTransactions,
+                        totalPixAvailable,
+                        totalCardInRelease,
+                        totalCardAvailable,
+                        totalAvailableBalance
+                    });
+                } catch (error) {
+                    console.error('Erro ao calcular estatísticas globais:', error);
+                } finally {
+                    setIsLoadingGlobalStats(false);
+                }
+            }
+        };
+
+        loadGlobalStats();
+    }, [allEventsData, user?.id]);
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat("pt-BR", {
@@ -315,19 +384,8 @@ export default function EventsPage() {
         setSelectedEvent(null);
     };
 
-    // Calcular estatísticas dos eventos com faturamento
-    const totalRevenue = eventsWithRevenue.reduce((sum, event) => sum + (event.revenue || 0), 0);
-    const totalProducerAmount = eventsWithRevenue.reduce((sum, event) => sum + (event.producerAmount || 0), 0);
-    const totalTransactions = eventsWithRevenue.reduce((sum, event) => sum + (event.transactionCount || 0), 0);
-    
-    // Calcular saldos totais
-    const totalPixAvailable = eventsWithRevenue.reduce((sum, event) => sum + (event.pixAvailable || 0), 0);
-    const totalCardInRelease = eventsWithRevenue.reduce((sum, event) => sum + (event.cardInRelease || 0), 0);
-    const totalCardAvailable = eventsWithRevenue.reduce((sum, event) => sum + (event.cardAvailable || 0), 0);
-    const totalAvailableBalance = totalPixAvailable + totalCardAvailable;
-
     // Loading state
-    if (!eventsData) {
+    if (!eventsData || !allEventsData) {
         return (
             <div className="container mx-auto px-4 py-8">
                 <div className="flex items-center justify-center h-64">
@@ -360,10 +418,14 @@ export default function EventsPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-white">
-                            {events.length}
+                            {isLoadingGlobalStats ? (
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#E65CFF]"></div>
+                            ) : (
+                                globalStats.totalEvents
+                            )}
                         </div>
                         <p className="text-xs text-[#A3A3A3]">
-                            Eventos na página atual
+                            Total de eventos na plataforma
                         </p>
                     </CardContent>
                 </Card>
@@ -377,7 +439,11 @@ export default function EventsPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-white">
-                            {events.filter((e: { eventEndDate: number; }) => e.eventEndDate > Date.now()).length}
+                            {isLoadingGlobalStats ? (
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#E65CFF]"></div>
+                            ) : (
+                                globalStats.activeEvents
+                            )}
                         </div>
                         <p className="text-xs text-[#A3A3A3]">
                             Eventos em andamento ou futuros
@@ -394,7 +460,11 @@ export default function EventsPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-green-400">
-                            {formatCurrency(totalAvailableBalance)}
+                            {isLoadingGlobalStats ? (
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#E65CFF]"></div>
+                            ) : (
+                                formatCurrency(globalStats.totalAvailableBalance)
+                            )}
                         </div>
                         <p className="text-xs text-[#A3A3A3]">
                             Disponível para saque
@@ -411,7 +481,11 @@ export default function EventsPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-green-400">
-                            {formatCurrency(totalPixAvailable)}
+                            {isLoadingGlobalStats ? (
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#E65CFF]"></div>
+                            ) : (
+                                formatCurrency(globalStats.totalPixAvailable)
+                            )}
                         </div>
                         <p className="text-xs text-[#A3A3A3]">
                             Liberado imediatamente
@@ -428,7 +502,11 @@ export default function EventsPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-orange-400">
-                            {formatCurrency(totalCardInRelease)}
+                            {isLoadingGlobalStats ? (
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#E65CFF]"></div>
+                            ) : (
+                                formatCurrency(globalStats.totalCardInRelease)
+                            )}
                         </div>
                         <p className="text-xs text-[#A3A3A3]">
                             Aguardando D+15
@@ -445,10 +523,14 @@ export default function EventsPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-white">
-                            {formatCurrency(totalRevenue)}
+                            {isLoadingGlobalStats ? (
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#E65CFF]"></div>
+                            ) : (
+                                formatCurrency(globalStats.totalRevenue)
+                            )}
                         </div>
                         <p className="text-xs text-[#A3A3A3]">
-                            Receita total dos eventos
+                            Receita total da plataforma
                         </p>
                     </CardContent>
                 </Card>
