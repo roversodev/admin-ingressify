@@ -20,39 +20,32 @@ export default function DisputesPage() {
     const { user } = useUser();
 
     const [statusFilter, setStatusFilter] = useState<DisputeStatus>("open");
-    const [selectedOrganizationId, setSelectedOrganizationId] = useState<string>("all");
     const [selectedEventId, setSelectedEventId] = useState<string>("all");
     const [limit, setLimit] = useState<number>(50);
 
-    // Query: Organizações do usuário (para filtro)
-    const organizations = useQuery(api.organizations.getUserOrganizations, {
+    // Query: Eventos (globais, leve/paginado) — sem organização
+    const eventsPage = useQuery(api.admin.listAllEvents, {
         userId: user?.id || "",
-    });
-
-    // Query: Eventos para filtro (com org)
-    const eventsWithOrg = useQuery(api.admin.listAllEventsWithOrganization, {
-        userId: user?.id || "",
-        limit: 1000,
+        limit: 200,
         skip: 0,
         searchTerm: "",
     });
 
-    // Query: Listar disputas
+    // Query: Listar disputas (sem organizationId)
     const disputes = useQuery(api.disputes.listDisputes, {
         userId: user?.id || "",
         status: statusFilter,
-        organizationId: selectedOrganizationId !== "all" ? (selectedOrganizationId as unknown as Id<"organizations">) : undefined,
         eventId: selectedEventId !== "all" ? (selectedEventId as unknown as Id<"events">) : undefined,
         limit,
     });
 
     const eventNameById = useMemo(() => {
         const map = new Map<string, string>();
-        (eventsWithOrg?.events || []).forEach((ev: any) => {
+        (eventsPage?.events || []).forEach((ev: any) => {
             map.set(String(ev._id), ev.name);
         });
         return map;
-    }, [eventsWithOrg]);
+    }, [eventsPage]);
 
     const formatCurrency = (value: number) =>
         new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
@@ -97,11 +90,11 @@ export default function DisputesPage() {
                 <CardHeader>
                     <CardTitle className="text-white">Filtros</CardTitle>
                     <CardDescription className="text-[#A3A3A3]">
-                        Refine a listagem por status, organização e evento.
+                        Refine a listagem por status e evento.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label className="text-sm text-[#A3A3A3] mb-2 block">Status</label>
                             <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as DisputeStatus)}>
@@ -118,30 +111,6 @@ export default function DisputesPage() {
                         </div>
 
                         <div>
-                            <label className="text-sm text-[#A3A3A3] mb-2 block">Organização</label>
-                            <Select
-                                value={selectedOrganizationId}
-                                onValueChange={(v) => {
-                                    setSelectedOrganizationId(v);
-                                    // reset event filter quando trocar organização
-                                    setSelectedEventId("all");
-                                }}
-                            >
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Selecione uma organização" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Todas</SelectItem>
-                                    {(organizations || []).map((org: any) => (
-                                        <SelectItem key={String(org._id)} value={String(org._id)}>
-                                            {org.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div>
                             <label className="text-sm text-[#A3A3A3] mb-2 block">Evento</label>
                             <Select value={selectedEventId} onValueChange={(v) => setSelectedEventId(v)}>
                                 <SelectTrigger className="w-full">
@@ -149,15 +118,11 @@ export default function DisputesPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">Todos</SelectItem>
-                                    {(eventsWithOrg?.events || [])
-                                        .filter((ev: any) =>
-                                            selectedOrganizationId === "all" ? true : String(ev.organizationId) === selectedOrganizationId
-                                        )
-                                        .map((ev: any) => (
-                                            <SelectItem key={String(ev._id)} value={String(ev._id)}>
-                                                {ev.name}
-                                            </SelectItem>
-                                        ))}
+                                    {(eventsPage?.events || []).map((ev: any) => (
+                                        <SelectItem key={String(ev._id)} value={String(ev._id)}>
+                                            {ev.name}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
