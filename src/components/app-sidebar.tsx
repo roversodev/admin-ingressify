@@ -103,6 +103,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             url: "/saques",
             icon: RiBankCard2Line,
           },
+          {
+            title: "Disputas",
+            url: "/disputas",
+            icon: RiShieldUserLine,
+          },
         ],
       },
     ],

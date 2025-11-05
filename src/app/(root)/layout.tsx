@@ -16,42 +16,49 @@ import { useRouter } from "next/navigation";
 
 export default function AdmLayout({ children }: { children: ReactNode }){
   const { user, isLoaded } = useUser();
-  const router = useRouter()
+  const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
-  if(!user){
-    router.push('/sign-in')
-  }
+  // Remova o redirecionamento imediato durante o render:
+  // if(!user){
+  //   router.push('/sign-in')
+  // }
   
-  // Verificar status de administrador
-  const adminStatus = useQuery(api.admin.checkAdminStatus, 
-    user?.id ? { userId: user.id } : "skip"
-  );
+  useEffect(() => {
+    if (!isLoaded) return;
+    // Se não logado, vá para sign-in e preserve a rota atual para voltar depois do login
+    if (!user) {
+      const target = window.location.pathname + window.location.search;
+      router.replace(`/sign-in?redirect_url=${encodeURIComponent(target)}`);
+      return;
+    }
+  }, [isLoaded, user, router]);
+
+  // Verificar status de administrador (já usa "skip" quando não há userId)
+  const adminStatus = useQuery(api.admin.checkAdminStatus, user?.id ? { userId: user.id } : "skip");
 
   useEffect(() => {
-    // Aguardar o carregamento do usuário e a verificação do status de admin
-    if (isLoaded && adminStatus !== undefined) {
-      setIsChecking(false);
-      
-      // Se não for admin ou não tiver permissões, redirecionar
-      if (!adminStatus || !adminStatus.isAdmin) {
-        toast.error("Você não tem permissão para acessar o painel administrativo");
-        window.location.href = "https://ingressify.com.br";
-      }
+    // Aguarde usuário carregado e adminStatus pronto
+    if (!isLoaded || !user) return;
+    if (adminStatus === undefined) return;
 
-      if (adminStatus.isAdmin) {
-        toast.success("Bem-vindo ao painel administrativo");
-      }
+    setIsChecking(false);
+
+    if (!adminStatus || !adminStatus.isAdmin) {
+      toast.error("Você não tem permissão para acessar o painel administrativo");
+      // Use replace para evitar loop no histórico; escolha a rota de fallback
+      router.replace("/");
+      return;
     }
-  }, [isLoaded, adminStatus]);
 
-  // Mostrar tela de carregamento enquanto verifica
+    // Opcional: evite toast de boas-vindas em cada reload
+    // toast.success("Bem-vindo ao painel administrativo");
+  }, [isLoaded, user, adminStatus, router]);
+
   if (isChecking) {
-    return (
-      <Spinner />
-    );
+    return <Spinner />;
   }
 
-   if (!adminStatus || !adminStatus.isAdmin) {
+  if (!adminStatus || !adminStatus.isAdmin) {
     return null;
   }
 

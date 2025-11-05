@@ -988,6 +988,19 @@ export type PublicApiType = {
       },
       any
     >;
+    validateTicketsForCheckout: FunctionReference<
+      "query",
+      "public",
+      {
+        eventId: Id<"events">;
+        ticketSelections: Array<{
+          quantity: number;
+          ticketTypeId: Id<"ticketTypes">;
+        }>;
+        userId?: string;
+      },
+      any
+    >;
   };
   tickets: {
     getUserTicketForEvent: FunctionReference<
@@ -1212,6 +1225,12 @@ export type PublicApiType = {
       { email: string },
       any
     >;
+    getUserInfoByEmail: FunctionReference<
+      "query",
+      "public",
+      { email: string },
+      any
+    >;
     updateUserPhone: FunctionReference<
       "mutation",
       "public",
@@ -1271,6 +1290,12 @@ export type PublicApiType = {
       { userId: string },
       any
     >;
+    getUsersInfoByEmails: FunctionReference<
+      "query",
+      "public",
+      { emails: Array<string> },
+      any
+    >;
   };
   validators: {
     inviteValidator: FunctionReference<
@@ -1307,6 +1332,12 @@ export type PublicApiType = {
       "query",
       "public",
       { userId: string },
+      any
+    >;
+    getValidatorInvitationsByEmail: FunctionReference<
+      "query",
+      "public",
+      { email: string },
       any
     >;
   };
@@ -1868,6 +1899,54 @@ export type PublicApiType = {
           triggerTicketTypeId?: Id<"ticketTypes">;
         };
         ticketTypeId: Id<"ticketTypes">;
+      },
+      any
+    >;
+    processEventActivationsAfterPurchase: FunctionReference<
+      "mutation",
+      "public",
+      { eventId: Id<"events"> },
+      any
+    >;
+  };
+  disputes: {
+    createOrUpdateFromWebhook: FunctionReference<
+      "mutation",
+      "public",
+      {
+        provider: "pagarme" | "mercadopago";
+        providerEventType?: string;
+        providerPayload?: any;
+        transactionId: string;
+      },
+      any
+    >;
+    listDisputes: FunctionReference<
+      "query",
+      "public",
+      {
+        eventId?: Id<"events">;
+        limit?: number;
+        organizationId?: Id<"organizations">;
+        status?: "open" | "won" | "lost" | "canceled";
+        userId: string;
+      },
+      any
+    >;
+    getDisputeById: FunctionReference<
+      "query",
+      "public",
+      { disputeId: Id<"disputes">; userId: string },
+      any
+    >;
+    resolveDispute: FunctionReference<
+      "mutation",
+      "public",
+      {
+        disputeId: Id<"disputes">;
+        outcome: "won" | "lost" | "canceled";
+        resolutionNotes?: string;
+        userId: string;
       },
       any
     >;

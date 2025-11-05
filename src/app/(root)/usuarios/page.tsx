@@ -15,7 +15,7 @@ export default function UsuariosPage() {
   const { user, isLoaded } = useUser();
   const [searchTerm, setSearchTerm] = useState('');
   const [newAdminEmail, setNewAdminEmail] = useState('');
-  const [selectedPermissions, setSelectedPermissions] = useState<string[]>(['view_users', 'manage_users']);
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>(['view_users', 'manage_users', 'manage_disputes']);
   const [selectedRole, setSelectedRole] = useState<'admin' | 'support' | 'finance'>('admin');
   
   // Buscar todos os usuários
@@ -57,6 +57,7 @@ export default function UsuariosPage() {
     { id: 'manage_events', label: 'Gerenciar Eventos' },
     { id: 'view_finances', label: 'Visualizar Finanças' },
     { id: 'manage_finances', label: 'Gerenciar Finanças' },
+    { id: 'manage_disputes', label: 'Gerenciar Disputas' },
   ];
   
   // Função para adicionar um novo administrador
