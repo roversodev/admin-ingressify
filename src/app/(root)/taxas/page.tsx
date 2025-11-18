@@ -92,6 +92,7 @@ export default function TaxasPage() {
     };
 
     const handleRemove = async (eventId: string) => {
+        
         try {
             await removeEventFeeSettings({
                 eventId: eventId as unknown as Id<"events">,
