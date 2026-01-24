@@ -14,6 +14,7 @@ export type Transaction = {
   status: string
 }
 
+
 export const columns: ColumnDef<Transaction>[] = [
   {
     accessorKey: "transactionId",
@@ -54,9 +55,23 @@ export const columns: ColumnDef<Transaction>[] = [
     header: "Status",
     cell: ({ row }) => {
       const status = row.getValue("status") as string
+      
+      const statusMap: Record<string, string> = {
+        paid: "Pago",
+        pending: "Pendente",
+        canceled: "Cancelado",
+        refunded: "Reembolsado"
+      }
+      
+      const translatedStatus = statusMap[status.toLowerCase()] || status
+
       return (
-        <Badge className={status === "paid" ? "bg-green-500" : status === "pending" ? "bg-yellow-500" : "bg-red-500"}>
-          {status}
+        <Badge className={
+          status === "paid" ? "bg-green-500" : 
+          status === "pending" ? "bg-yellow-500" : 
+          "bg-red-500"
+        }>
+          {translatedStatus}
         </Badge>
       )
     }
@@ -68,13 +83,15 @@ export const columns: ColumnDef<Transaction>[] = [
       const transaction = row.original
       
       return (
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => document.dispatchEvent(new CustomEvent('view-transaction-details', { detail: transaction.transactionId }))}
-        >
-          Ver Detalhes
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => document.dispatchEvent(new CustomEvent('view-transaction-details', { detail: transaction.transactionId }))}
+          >
+            Ver Detalhes
+          </Button>
+        </div>
       )
     }
   }

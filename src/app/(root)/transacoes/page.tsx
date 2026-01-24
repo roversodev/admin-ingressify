@@ -15,19 +15,211 @@ import { columns, Transaction } from "./columns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CodeBlock } from "@/components/ui/code-block";
 import { type GenericId as Id } from "convex/values";
+import { feeCalculations } from "@/lib/fees";
+import DatePickerWithRange from "@/components/date-picker-with-range";
+import { DateRange } from "react-day-picker";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { processRefund } from "@/app/actions/refund";
+import { checkTransactionStatusMP, sendPushNotification } from "@/app/actions/reprocess-transaction";
+import { sendPurchaseEmail } from "@/app/actions/sendPurchaseEmail";
+import { useAdminPermissions } from "@/hooks/use-admin-permissions";
+import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { PaginationState } from "@tanstack/react-table";
 
 export default function TransacoesPage() {
     const { user, isLoaded } = useUser();
+    const { hasPermission, isLoading: permissionsLoading } = useAdminPermissions();
+    const router = useRouter();
+    
     const [searchTerm, setSearchTerm] = useState("");
     const [searchType, setSearchType] = useState<"email" | "cpf" | "transaction">("email");
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
     const [transactionDetails, setTransactionDetails] = useState<any>(null);
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
+    
+    const [pagination, setPagination] = useState<PaginationState>({
+        pageIndex: 0,
+        pageSize: 10,
+    });
+
     const [selectedEventId, setSelectedEventId] = useState<string>("all");
     const [events, setEvents] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    
+    // Reset page when event filter changes
+    useEffect(() => {
+        setPagination(prev => ({ ...prev, pageIndex: 0 }));
+    }, [selectedEventId]);
+
+    const [date, setDate] = useState<DateRange | undefined>();
+    const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
+    const [refundReason, setRefundReason] = useState("");
+    const [isRefunding, setIsRefunding] = useState(false);
+    const [isReprocessModalOpen, setIsReprocessModalOpen] = useState(false);
+    const [isReprocessing, setIsReprocessing] = useState(false);
+    const [reprocessTransactionId, setReprocessTransactionId] = useState("");
+    const { isSuperAdmin } = useAdminPermissions();
+
+    const openReprocessModal = (transactionId?: string) => {
+        if (!isSuperAdmin) return;
+        setReprocessTransactionId(transactionId || "");
+        setIsReprocessModalOpen(true);
+    };
+
+    const handleReprocess = async () => {
+        if (!reprocessTransactionId) return;
+        
+        setIsReprocessing(true);
+        try {
+            // 1. Verificar status no Mercado Pago
+            const mpResult = await checkTransactionStatusMP(reprocessTransactionId);
+            
+            if (!mpResult.success) {
+                toast.error(`Erro ao verificar MP: ${mpResult.error}`);
+                setIsReprocessing(false);
+                return;
+            }
+
+            if (mpResult.status !== 'approved' && mpResult.status !== 'authorized') {
+                toast.error(`Transação não aprovada no Mercado Pago. Status: ${mpResult.status}`);
+                setIsReprocessing(false);
+                return;
+            }
+
+            toast.info("Transação aprovada no MP. Criando ingressos...");
+
+            // 2. Criar ingressos (idempotente)
+            const transaction = await getByTransactionIdMutation({ transactionId: reprocessTransactionId });
+            
+            if (!transaction) {
+                toast.error("Transação não encontrada no banco de dados.");
+                setIsReprocessing(false);
+                return;
+            }
+
+            const createResult = await createTicketsFromTransaction({
+                transactionId: reprocessTransactionId,
+                customerName: transaction.metadata?.name || transaction.metadata?.customerName,
+                customerEmail: transaction.metadata?.email || transaction.metadata?.customerEmail,
+                customerCpf: transaction.metadata?.cpf || transaction.metadata?.customerCpf,
+            });
+
+            if (!createResult.success) {
+                // Se falhar a criação, mas já existir, pode ser que o erro seja "Tickets already exist"
+                // Nesse caso, continuamos para reenviar e-mail
+                console.error("Erro/Aviso na criação de ingressos:", createResult.error);
+                // Não retornamos aqui para tentar reenviar o email caso os ingressos já existam
+            } else {
+                toast.success("Ingressos processados com sucesso!");
+            }
+
+            // 3. Enviar E-mail e WhatsApp
+            // Buscar ingressos criados para pegar os detalhes
+            const tickets = await getTicketsByTransactionIdMutation({ transactionId: reprocessTransactionId });
+            
+            if (tickets && tickets.length > 0) {
+                const firstTicket = tickets[0];
+                const eventName = transaction.eventName || firstTicket.eventName || "Evento";
+                const customerEmail = firstTicket.userEmail || transaction.metadata?.email;
+                const customerPhone = firstTicket.userPhone || transaction.metadata?.phone;
+                const customerName = firstTicket.userName || transaction.metadata?.name;
+
+                // Buscar localização do evento
+                const event = events.find(e => e._id === transaction.eventId);
+                const eventLocation = event?.location || "Local a confirmar";
+
+                // Enviar Email
+                if (customerEmail) {
+                    toast.loading("Enviando e-mail...");
+                    const emailResult = await sendPurchaseEmail({
+                        to: customerEmail,
+                        customerName: customerName,
+                        eventName: eventName,
+                        eventDate: transaction.eventStartDate || Date.now(),
+                        eventLocation: eventLocation,
+                        tickets: tickets.map((t: any) => ({
+                            type: t.ticketTypeName || "Ingresso",
+                            quantity: t.quantity || 1,
+                            unitPrice: t.unitPrice || 0,
+                            ticketId: t._id
+                        })),
+                        totalAmount: transaction.amount || 0,
+                        transactionId: reprocessTransactionId
+                    });
+                    
+                    if (emailResult.success) {
+                        toast.success("E-mail enviado!");
+                    } else {
+                        console.error("Erro ao enviar email:", emailResult.error);
+                        toast.error("Erro ao enviar e-mail.");
+                    }
+                }
+
+                // Enviar Push Notification
+                if (customerEmail) {
+                    toast.loading("Enviando Notificação para o cliente...");
+                    try {
+                        await sendPushNotification({
+                            email: customerEmail,
+                            eventName,
+                            transactionId: reprocessTransactionId
+                        });
+                        toast.success("Push enviado!");
+                    } catch (error) {
+                        console.error("Erro ao enviar Push:", error);
+                    }
+                }
+            }
+            
+            setIsReprocessModalOpen(false);
+            setReprocessTransactionId("");
+            
+        } catch (error) {
+            console.error("Erro no reprocessamento:", error);
+            toast.error("Erro crítico ao reprocessar transação.");
+        } finally {
+            setIsReprocessing(false);
+            toast.dismiss(); // Limpar toasts de loading
+        }
+    };
+
+    useEffect(() => {
+        if (!permissionsLoading && !hasPermission('view_finances')) {
+             toast.error("Acesso negado");
+             router.push("/");
+        }
+    }, [permissionsLoading, hasPermission, router]);
+
+    const handleRefund = async () => {
+        if (!selectedTransaction) return;
+        
+        const paymentId = selectedTransaction.transactionId || selectedTransaction.externalId || selectedTransaction.metadata?.payment_id || selectedTransaction.metadata?.id;
+        
+        if (!paymentId) {
+            toast.error("ID de pagamento não encontrado para esta transação.");
+            return;
+        }
+
+        setIsRefunding(true);
+        try {
+            const result = await processRefund(paymentId, refundReason);
+            if (result.success) {
+                toast.success("Reembolso realizado com sucesso!");
+                setIsRefundModalOpen(false);
+                setRefundReason("");
+            } else {
+                toast.error(`Erro ao reembolsar: ${result.error}`);
+            }
+        } catch (error) {
+            toast.error("Erro ao processar reembolso.");
+        } finally {
+            setIsRefunding(false);
+        }
+    };
+    
+    const canManage = hasPermission('manage_finances');
 
     // Buscar eventos ativos usando useQuery
     const eventsData = useQuery(
@@ -39,15 +231,20 @@ export default function TransacoesPage() {
         } : "skip"
     );
     
-    // Declarar os hooks useQuery para transações no nível superior
-    const organizationTransactions = useQuery(
-        api.admin.getOrganizationTransactions,
-        isLoaded && user?.id && selectedEventId && selectedEventId !== "all" ? {
-            organizationId: events.find(e => e._id === selectedEventId)?.organizationId || selectedEventId,
+    // Buscar transações paginadas
+    const transactionsQuery = useQuery(
+        api.admin.getAllTransactionsPaginated,
+        isLoaded && user?.id ? {
             userId: user.id,
-            eventId: selectedEventId as unknown as Id<"events"> // Conversão mais segura
+            eventId: selectedEventId === "all" ? undefined : selectedEventId as Id<"events">,
+            page: pagination.pageIndex + 1,
+            limit: pagination.pageSize
         } : "skip"
     );
+
+    const transactions = transactionsQuery?.transactions || [];
+    const pageCount = transactionsQuery?.totalPages || 0;
+    const isLoading = !transactionsQuery;
 
     // Mutações para buscar transações e tickets
     const getByTransactionIdMutation = useMutation(api.admin.getByTransactionIdMutation);
@@ -55,6 +252,8 @@ export default function TransacoesPage() {
     const getTicketsByEmailMutation = useMutation(api.admin.getTicketsByEmailMutation);
     const getTicketsByCpfMutation = useMutation(api.admin.getTicketsByCpfMutation);
     const getOrganizationTransactionsMutation = useMutation(api.admin.getOrganizationTransactionsMutation);
+    const getEventTransactionsMutation = useMutation(api.admin.getEventTransactionsMutation);
+    const createTicketsFromTransaction = useMutation(api.tickets.createTicketsFromTransaction);
 
     // Atualizar o estado de eventos quando os dados forem carregados
     useEffect(() => {
@@ -62,85 +261,6 @@ export default function TransacoesPage() {
             setEvents(eventsData.events ? eventsData.events : []);
         }
     }, [eventsData]);
-
-    // Atualizar transações quando os dados da query forem carregados
-    useEffect(() => {
-        if (isLoaded && user?.id && selectedEventId && selectedEventId !== "all") {
-            setIsLoading(true);
-            
-            if (organizationTransactions) {
-                // Verificar se as transações já têm eventName, caso contrário, adicionar
-                const transactionsWithEventInfo = organizationTransactions.map((transaction: any) => {
-                    // Se a transação já tem eventName, usar o existente
-                    if (transaction.eventName) {
-                        return transaction;
-                    }
-                    
-                    // Caso contrário, adicionar o nome do evento
-                    const event = events.find(e => e._id === selectedEventId);
-                    return {
-                        ...transaction,
-                        eventName: event?.name || "Evento desconhecido",
-                        eventStartDate: event?.eventStartDate
-                    };
-                });
-                
-                setTransactions(transactionsWithEventInfo);
-                setIsLoading(false);
-            } else {
-                setTransactions([]);
-                setIsLoading(false);
-            }
-        }
-    }, [organizationTransactions, selectedEventId, events, isLoaded, user]);
-
-    // Buscar transações de múltiplos eventos quando "all" é selecionado
-    useEffect(() => {
-        const fetchAllTransactions = async () => {
-            if (selectedEventId === "all" && events.length > 0 && isLoaded && user?.id) {
-                setIsLoading(true);
-                let allTransactions: any[] = [];
-                
-                // Limitar a 10 eventos para não sobrecarregar
-                const eventsToProcess = events.slice(0, 10);
-                const transactionsMap = new Map(); // Usar um Map para evitar duplicações
-                
-                for (const event of eventsToProcess) {
-                    try {
-                        const organizationId = event.organizationId || event._id;
-                        // Aqui usamos a mutação em vez de useQuery
-                        const result = await getOrganizationTransactionsMutation({
-                            organizationId,
-                            userId: user.id
-                        });
-                        
-                        if (result && result.length > 0) {
-                            // Adicionar ao Map usando transactionId como chave para evitar duplicações
-                            result.forEach((transaction: any) => {
-                                if (!transactionsMap.has(transaction.transactionId)) {
-                                    transactionsMap.set(transaction.transactionId, transaction);
-                                }
-                            });
-                        }
-                    } catch (err) {
-                        console.error(`Erro ao buscar transações do evento ${event.name}:`, err);
-                    }
-                }
-                
-                // Converter o Map para array
-                allTransactions = Array.from(transactionsMap.values());
-                
-                // Ordenar transações por data (mais recentes primeiro)
-                allTransactions.sort((a, b) => b.createdAt - a.createdAt);
-                setTransactions(allTransactions);
-                setIsLoading(false);
-            }
-        };
-        
-        if (selectedEventId === "all") {
-            fetchAllTransactions();
-        }
-    }, [selectedEventId, events, isLoaded, user]);
 
     // Função para buscar transações por termo de pesquisa
     const handleSearch = async () => {
@@ -216,12 +336,18 @@ export default function TransacoesPage() {
             handleViewDetails(event.detail);
         };
 
+        const handleReprocessEvent = (e: CustomEvent) => {
+            openReprocessModal(e.detail);
+        };
+
         document.addEventListener('view-transaction-details', handleViewTransactionDetails as EventListener);
+        document.addEventListener('reprocess-transaction', handleReprocessEvent as EventListener);
 
         return () => {
             document.removeEventListener('view-transaction-details', handleViewTransactionDetails as EventListener);
+            document.removeEventListener('reprocess-transaction', handleReprocessEvent as EventListener);
         };
-    }, []);
+    }, [isSuperAdmin]);
 
     // Verificar se uma transação é elegível para reembolso
     const checkRefundEligibility = (transaction: any, eventStartDate: number) => {
@@ -249,21 +375,305 @@ export default function TransacoesPage() {
 
     // Funções de formatação
     const formatDate = (timestamp: number) => {
-        return new Date(timestamp).toLocaleString('pt-BR');
+        if (!timestamp) return 'N/A';
+        return new Date(timestamp).toLocaleString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     };
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
     };
 
-    if (!isLoaded) {
+    // Utilitário para baixar CSV
+    const downloadCSV = (filename: string, headers: string[], rows: string[][]) => {
+        const escape = (val: string) => `"${(val ?? "").toString().replace(/"/g, '""')}"`;
+        const csvContent = [headers.join(","), ...rows.map(r => r.map(escape).join(","))].join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleExportTransactions = async () => {
+        try {
+            if (!user?.id) {
+                toast.error("Usuário não autenticado");
+                return;
+            }
+            if (!date?.from || !date?.to) {
+                toast.error("Selecione um período para exportar");
+                return;
+            }
+
+            const startTs = new Date(date.from.setHours(0, 0, 0, 0)).getTime();
+            const endTs = new Date(date.to.setHours(23, 59, 59, 999)).getTime();
+
+            toast.loading("Coletando transações do período selecionado...");
+
+            // Determinar eventos a processar
+            const eventItems = selectedEventId === "all"
+                ? (events || [])
+                : (events || []).filter((e: any) => e._id === selectedEventId);
+
+            // Buscar transações por evento e filtrar pelo período
+            const allByEvent = await Promise.all(
+                eventItems.map(async (ev: any) => {
+                    try {
+                        const txs = await getEventTransactionsMutation({ eventId: ev._id as Id<"events">, userId: user.id });
+                        return (txs || []).map((t: any) => ({
+                            ...t,
+                            eventName: t.eventName || ev.name,
+                            eventStartDate: t.eventStartDate || ev.eventStartDate,
+                        }));
+                    } catch {
+                        return [];
+                    }
+                })
+            );
+
+            // Achatar, filtrar por período e remover duplicados por transactionId
+            const merged = ([] as any[]).concat(...allByEvent)
+                .filter((t: any) => typeof t.createdAt === "number" && t.createdAt >= startTs && t.createdAt <= endTs);
+            const uniqueById = Array.from(new Map(merged.map(t => [t.transactionId, t])).values());
+
+            if (uniqueById.length === 0) {
+                toast.error("Nenhuma transação encontrada no período selecionado");
+                toast.dismiss();
+                return;
+            }
+
+            const headers = [
+                "EVENTO",
+                "CLIENTE",
+                "CPF",
+                "WHATSAPP",
+                "E-MAIL",
+                "DATA/HORA COMPRA",
+                "FORMA DE PAGAMENTO",
+                "STATUS",
+                "PARCELAS",
+                "TIPO",
+                "VALOR INGRESSOS",
+                "VALOR TAXA",
+                "JUROS PARCELAMENTO",
+                "DESCONTO",
+                "VALOR PAGO",
+                "VALOR LIQUIDO",
+                "TAXA BANCO",
+                "COMISSÃO",
+                "CÓDIGO DA TRANSAÇÃO"
+            ];
+
+            const rows = await Promise.all(
+                uniqueById.map(async (t: any) => {
+                    try {
+                        const allTickets = await getTicketsByTransactionIdMutation({ transactionId: t.transactionId });
+                        // Filtrar ingressos transferidos para não contabilizar no valor total
+                        const tickets = (allTickets || []).filter((tk: any) => tk.status !== 'transfered');
+
+                        // Dados cliente via tickets, fallback para metadata
+                        const firstTicket = tickets?.[0] || allTickets?.[0];
+                        const meta = t?.metadata || {};
+                        const cliente = firstTicket?.userName || meta?.name || meta?.customerName || "";
+                        const cpf = firstTicket?.userCpf || meta?.cpf || meta?.customerCpf || "";
+                        const whatsapp = firstTicket?.userPhone || meta?.phone || meta?.customerPhone || "";
+                        const email = firstTicket?.userEmail || meta?.email || meta?.customerEmail || "";
+
+                        const installments = meta?.installments || 1;
+                        const interestAmount = Number(meta?.interestAmount || 0);
+
+                        const tiposQuantidade = (tickets || []).map((tk: any) => {
+                            const qty = tk.quantity ?? 1;
+                            const type = tk.ticketTypeName || "Indefinido";
+                            return `${type} x${qty}`;
+                        }).join(" / ");
+
+                        const subtotal = (tickets || []).reduce((sum: number, tk: any) => {
+                            const qty = tk.quantity ?? 1;
+                            const unit = tk.unitPrice ?? tk.amount ?? 0;
+                            return sum + qty * unit;
+                        }, 0);
+
+                        const desconto = (tickets || []).reduce((sum: number, tk: any) => {
+                            const d = tk.discountAmount ?? tk.couponDiscount ?? 0;
+                            return sum + d;
+                        }, 0);
+
+                        const methodRaw: string = (t.paymentMethod || "").toString().toLowerCase();
+                        const isOffline = methodRaw.includes("offline") || methodRaw.includes("adjustment");
+                        const methodNorm = isOffline ? "OFFLINE" : (methodRaw.includes("card") ? "CARD" : "PIX");
+                        const formaPagamento = isOffline ? "Ajuste Offline" : (methodNorm === "PIX" ? "PIX" : "Cartão");
+
+                        // Priorizar o valor total cobrado do metadata se disponível, pois inclui juros
+                        const totalPago = Number(t.amount ?? meta?.chargedAmount ?? (subtotal + feeCalculations.calculateFee(subtotal, methodNorm as any) - desconto)) || 0;
+                        
+                        // Lógica para separar juros de parcelamento do cálculo da plataforma
+                        let valorLiquidoProdutor: number;
+                        let taxaPlataformaBruta: number;
+                        let taxaBanco: number;
+
+                        if (subtotal > 0) {
+                            // Se temos o valor dos ingressos, usamos como base para calcular o líquido do produtor
+                            const expectedCashTotal = feeCalculations.calculateTotal(subtotal, methodNorm as any, desconto, undefined, t.metadata);
+                            
+                            valorLiquidoProdutor = feeCalculations.calculateProducerAmount(expectedCashTotal, desconto, methodNorm as any, undefined, t.metadata);
+                            
+                            // A taxa total (Valor Taxa) é a diferença entre o que o cliente pagou e o que o produtor recebe
+                            taxaPlataformaBruta = totalPago - valorLiquidoProdutor;
+
+                            // Taxa banco: Diferença entre o total pago e o recebido líquido (netReceivedAmount)
+                            // Se netReceivedAmount não existir, assumimos que o valor recebido é o total pago menos os juros
+                            const netReceived = t.netReceivedAmount 
+                                ? Number(t.netReceivedAmount) 
+                                : (totalPago - interestAmount);
+                                
+                            taxaBanco = Math.max(0, totalPago - netReceived);
+                        } else {
+                            // Fallback para lógica antiga se não tiver info de ingressos
+                            valorLiquidoProdutor = feeCalculations.calculateProducerAmount(totalPago, desconto, methodNorm as any, undefined, t.metadata);
+                            
+                            taxaPlataformaBruta = totalPago - valorLiquidoProdutor;
+                            
+                            const netReceived = t.netReceivedAmount 
+                                ? Number(t.netReceivedAmount) 
+                                : (totalPago - interestAmount);
+                                
+                            taxaBanco = Math.max(0, totalPago - netReceived);
+                        }
+
+                        // Comissão líquida da plataforma: taxa total - taxa banco
+                        const comissaoLiquidaPlataforma = Math.max(0, taxaPlataformaBruta - taxaBanco);
+
+                        // Tradução do status
+                        const statusMap: Record<string, string> = {
+                            "paid": "Pago",
+                            "pending": "Pendente",
+                            "failed": "Falhou",
+                            "refunded": "Reembolsado",
+                            "canceled": "Cancelado",
+                            "completed": "Pago"
+                        };
+                        const statusTraduzido = statusMap[t.status] || t.status || "";
+
+                        return [
+                            t.eventName || "",
+                            cliente,
+                            cpf,
+                            whatsapp,
+                            email,
+                            formatDate(t.createdAt),
+                            formaPagamento,
+                            statusTraduzido,
+                            installments.toString(),
+                            tiposQuantidade,
+                            new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(subtotal),
+                            new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(taxaPlataformaBruta),
+                            new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(interestAmount),
+                            new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(desconto),
+                            new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(totalPago),
+                            new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valorLiquidoProdutor),
+                            new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(taxaBanco),
+                            new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(comissaoLiquidaPlataforma),
+                            t.transactionId || ""
+                        ];
+                    } catch {
+                        // Fallback mínimo se enriquecimento falhar
+                        const meta = t?.metadata || {};
+                        const methodRaw: string = (t.paymentMethod || "").toString().toLowerCase();
+                        const methodNorm = methodRaw.includes("card") ? "CARD" : "PIX";
+                        
+                        const installments = meta?.installments || 1;
+                        const interestAmount = Number(meta?.interestAmount || 0);
+                        
+                        const totalPago = Number(t.amount ?? 0) || 0;
+                        
+                        // Fallback cálculo
+                        const valorLiquidoProdutor = feeCalculations.calculateProducerAmount(totalPago, 0, methodNorm as any, undefined, t.metadata);
+                        const taxaPlataformaBruta = totalPago - valorLiquidoProdutor;
+                        
+                        const netReceived = t.netReceivedAmount 
+                            ? Number(t.netReceivedAmount) 
+                            : (totalPago - interestAmount);
+                            
+                        const taxaBanco = Math.max(0, totalPago - netReceived);
+                        const comissaoLiquidaPlataforma = Math.max(0, taxaPlataformaBruta - taxaBanco);
+
+                        // Tradução do status
+                        const statusMap: Record<string, string> = {
+                            "paid": "Pago",
+                            "pending": "Pendente",
+                            "failed": "Falhou",
+                            "refunded": "Reembolsado",
+                            "canceled": "Cancelado",
+                            "completed": "Pago"
+                        };
+                        const statusTraduzido = statusMap[t.status] || t.status || "";
+
+                        return [
+                            t.eventName || "",
+                            "", "", "", "", // cliente/cpf/whats/email
+                            formatDate(t.createdAt),
+                            methodNorm === "PIX" ? "PIX" : "Cartão",
+                            statusTraduzido,
+                            installments.toString(),
+                            "",
+                            new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(0),
+                            new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(taxaPlataformaBruta),
+                            new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(interestAmount),
+                            new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(0),
+                            new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(totalPago),
+                            new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valorLiquidoProdutor),
+                            new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(taxaBanco),
+                            new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(comissaoLiquidaPlataforma),
+                            t.transactionId || ""
+                        ];
+                    }
+                })
+            );
+
+            const filename = `transacoes_${selectedEventId === "all" ? "todos" : selectedEventId}_${new Date(startTs).toLocaleDateString("pt-BR")}_${new Date(endTs).toLocaleDateString("pt-BR")}.csv`;
+            downloadCSV(filename, headers, rows);
+            toast.success("CSV de transações exportado com sucesso!");
+        } catch (error) {
+            console.error("Erro ao exportar transações:", error);
+            toast.error("Erro ao gerar o CSV de transações");
+        } finally {
+            toast.dismiss();
+        }
+    };
+
+    if (!isLoaded || permissionsLoading) {
         return <Spinner />;
+    }
+
+    if (!hasPermission('view_finances')) {
+        return null;
     }
 
     return (
         <div className="space-y-6 p-6">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold">Gerenciamento de Transações</h1>
+                <div className="flex items-center gap-3">
+                    <DatePickerWithRange date={date} setDate={setDate} />
+                    <Button
+                        onClick={handleExportTransactions}
+                        variant="default"
+                        size="sm"
+                    >
+                        Exportar CSV
+                    </Button>
+                </div>
             </div>
 
             <Card>
@@ -327,7 +737,7 @@ export default function TransacoesPage() {
                             disabled={isLoading}
                         >
                             {isLoading ? "Carregando..." : "Atualizar"}
-                        </Button>
+                        </Button> 
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -337,7 +747,13 @@ export default function TransacoesPage() {
                             <p className="mt-2 text-muted-foreground">Carregando transações...</p>
                         </div>
                     ) : (
-                        <DataTable columns={columns} data={transactions} />
+                        <DataTable 
+                            columns={columns} 
+                            data={transactions} 
+                            pageCount={pageCount}
+                            pagination={pagination}
+                            onPaginationChange={setPagination}
+                        />
                     )}
                 </CardContent>
             </Card>
@@ -438,10 +854,95 @@ export default function TransacoesPage() {
                                 code={JSON.stringify(selectedTransaction.metadata, null, 2)}
                                 />
                             </div>
+
+                            <div className="mt-8 border-t pt-6">
+                                <h3 className="font-semibold text-lg mb-4 text-destructive">Ações de Risco</h3>
+                                <div className="flex gap-4">
+                                    <Button 
+                                        variant="destructive" 
+                                        className="flex-1" 
+                                        onClick={() => setIsRefundModalOpen(true)}
+                                        disabled={!canManage}
+                                    >
+                                        Reembolsar Transação
+                                    </Button>
+                                    {isSuperAdmin && (
+                                        <Button 
+                                            variant="outline"
+                                            className="flex-1 text-amber-500 border-amber-500 hover:bg-amber-500/10"
+                                            onClick={() => openReprocessModal(selectedTransaction.transactionId)}
+                                        >
+                                            Reprocessar Transação
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
             )}
+
+            {/* Modal de Reprocessamento */}
+            <Dialog open={isReprocessModalOpen} onOpenChange={setIsReprocessModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Reprocessar Transação</DialogTitle>
+                        <DialogDescription>
+                            Esta ação verificará o status no Mercado Pago e, se aprovado, recriará os ingressos e reenviará os e-mails.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="reprocessId">ID da Transação</Label>
+                            <Input
+                                id="reprocessId"
+                                value={reprocessTransactionId}
+                                onChange={(e) => setReprocessTransactionId(e.target.value)}
+                                placeholder="Insira o ID da transação"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsReprocessModalOpen(false)} disabled={isReprocessing}>
+                            Cancelar
+                        </Button>
+                        <Button onClick={handleReprocess} disabled={isReprocessing || !reprocessTransactionId} className="bg-amber-500 hover:bg-amber-600">
+                            {isReprocessing ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Processando...
+                                </>
+                            ) : (
+                                "Reprocessar"
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isRefundModalOpen} onOpenChange={setIsRefundModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Confirmar Reembolso</DialogTitle>
+                        <DialogDescription>
+                            Tem certeza que deseja reembolsar esta transação integralmente? Esta ação enviará uma solicitação de estorno para o processador de pagamento e não pode ser desfeita.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="reason">Motivo do Reembolso</Label>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsRefundModalOpen(false)} disabled={isRefunding}>
+                            Cancelar
+                        </Button>
+                        <Button variant="destructive" onClick={handleRefund} disabled={isRefunding}>
+                            {isRefunding ? "Processando..." : "Confirmar Reembolso"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

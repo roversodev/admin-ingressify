@@ -8,6 +8,8 @@ import {
   getPaginationRowModel,
   SortingState,
   getSortedRowModel,
+  PaginationState,
+  OnChangeFn,
 } from "@tanstack/react-table"
 import { useState } from "react"
 
@@ -24,36 +26,46 @@ import { Button } from "@/components/ui/button"
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  pageCount?: number
+  pagination?: PaginationState
+  onPaginationChange?: OnChangeFn<PaginationState>
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  pageCount,
+  pagination,
+  onPaginationChange,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([])
 
   const table = useReactTable({
     data,
     columns,
+    pageCount: pageCount ?? -1,
+    manualPagination: !!pagination,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
+    onPaginationChange,
     state: {
       sorting,
+      pagination,
     },
   })
 
   return (
     <div>
-      <div className="rounded-md border">
+      <div className="rounded-md border border-zinc-700">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-zinc-800">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow key={headerGroup.id} className="border-zinc-700">
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} className="text-[#A3A3A3]">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -72,6 +84,7 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className="border-zinc-700 hover:bg-zinc-800"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
@@ -82,7 +95,7 @@ export function DataTable<TData, TValue>({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell colSpan={columns.length} className="h-24 text-center text-[#A3A3A3]">
                   Nenhuma transação encontrada
                 </TableCell>
               </TableRow>
@@ -96,6 +109,7 @@ export function DataTable<TData, TValue>({
           size="sm"
           onClick={() => table.previousPage()}
           disabled={!table.getCanPreviousPage()}
+          className="border-zinc-700 text-white hover:bg-zinc-800"
         >
           Anterior
         </Button>
@@ -104,6 +118,7 @@ export function DataTable<TData, TValue>({
           size="sm"
           onClick={() => table.nextPage()}
           disabled={!table.getCanNextPage()}
+          className="border-zinc-700 text-white hover:bg-zinc-800"
         >
           Próxima
         </Button>
