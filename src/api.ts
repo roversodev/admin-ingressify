@@ -977,6 +977,11 @@ export type PublicApiType = {
           triggerPercentage?: number;
           triggerTicketTypeId?: Id<"ticketTypes">;
         };
+        buyXGetY?: {
+          buyQuantity: number;
+          enabled: boolean;
+          getQuantity: number;
+        };
         dayId?: Id<"eventDays">;
         description?: string;
         eventId: Id<"events">;
@@ -1223,6 +1228,18 @@ export type PublicApiType = {
       { status: string; transactionId: string },
       any
     >;
+    updateMetadata: FunctionReference<
+      "mutation",
+      "public",
+      { metadata: any; transactionId: string },
+      any
+    >;
+    updateNetAmounts: FunctionReference<
+      "mutation",
+      "public",
+      { netReceivedAmount: number; transactionId: string },
+      any
+    >;
   };
   transfers: {
     createTransferRequest: FunctionReference<
@@ -1240,7 +1257,7 @@ export type PublicApiType = {
     cancelTransfer: FunctionReference<
       "mutation",
       "public",
-      { transferRequestId: Id<"transferRequests"> },
+      { transferRequestId: Id<"transferRequests">; userId: string },
       any
     >;
     acceptTransferSimple: FunctionReference<
@@ -1856,6 +1873,12 @@ export type PublicApiType = {
         eventId: Id<"events">;
         representativeId?: Id<"representatives">;
       },
+      any
+    >;
+    getAdminOneSignalPlayerIds: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
       any
     >;
   };

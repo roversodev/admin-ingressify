@@ -1,7 +1,7 @@
 'use server';
 
 import { getConvexClient } from "@/lib/convex";
-import { api } from "@/convex/_generated/api";
+import { api } from "@/api";
 import { sendOneSignalToPlayers } from "@/lib/onesignal";
 
 interface SendEventCreatedNotificationParams {
