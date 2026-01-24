@@ -82,6 +82,7 @@ export default function TransacoesPage() {
                 return;
             }
 
+            
             if (mpResult.status !== 'approved' && mpResult.status !== 'authorized') {
                 toast.error(`Transação não aprovada no Mercado Pago. Status: ${mpResult.status}`);
                 setIsReprocessing(false);
