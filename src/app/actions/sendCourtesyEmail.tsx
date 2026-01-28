@@ -1,6 +1,5 @@
 "use server";
 
-import { Resend } from 'resend';
 import { 
   Body, 
   Column, 
@@ -215,6 +214,7 @@ export async function sendCourtesyEmail({
     return { success: false, error: 'RESEND_API_KEY is missing' };
   }
 
+  const { Resend } = await import('resend');
   const resend = new Resend(process.env.RESEND_API_KEY);
 
   try {

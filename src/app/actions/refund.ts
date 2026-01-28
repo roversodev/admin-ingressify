@@ -1,10 +1,10 @@
 "use server";
 
-import { MercadoPagoConfig, PaymentRefund } from 'mercadopago';
-
 export async function processRefund(paymentId: string, reason?: string) {
   try {
+    const { MercadoPagoConfig, PaymentRefund } = await import('mercadopago');
     const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+    
     
     if (!accessToken) {
       return { success: false, error: "Token de acesso do Mercado Pago não configurado (MERCADO_PAGO_ACCESS_TOKEN)." };

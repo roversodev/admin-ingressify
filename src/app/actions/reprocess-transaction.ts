@@ -1,13 +1,14 @@
 "use server";
 
-import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { getConvexClient } from "@/lib/convex";
 import { api } from "@/api";
 import { sendOneSignalToPlayers } from "@/lib/onesignal";
 
 export async function checkTransactionStatusMP(paymentId: string) {
   try {
+    const { MercadoPagoConfig, Payment } = await import('mercadopago');
     const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+    
     
     if (!accessToken) {
       return { success: false, error: "Token de acesso do Mercado Pago não configurado." };
