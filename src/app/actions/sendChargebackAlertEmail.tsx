@@ -1,3 +1,5 @@
+'use server';
+
 import { Resend } from 'resend';
 import {
   Body,
@@ -9,8 +11,6 @@ import {
   Section,
   Text,
 } from '@react-email/components';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -81,6 +81,8 @@ export async function sendChargebackAlertEmail({
   transactionId,
   paymentMethod,
 }: ChargebackEmailProps) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
   try {
     await resend.emails.send({
       from: 'Ingressify <contato@ingressify.com.br>',

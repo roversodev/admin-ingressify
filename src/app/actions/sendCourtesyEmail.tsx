@@ -16,8 +16,6 @@ import {
   Text, 
 } from '@react-email/components';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const baseUrl = 'https://ingressify.com.br';
 
 interface CourtesyEmailProps {
@@ -212,6 +210,8 @@ export async function sendCourtesyEmail({
   ticketId: string;
   eventImageUrl?: string; // Nova propriedade
 }) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
   try {
     await resend.emails.send({
       from: 'Ingressify <confirmacao@ingressify.com.br>',

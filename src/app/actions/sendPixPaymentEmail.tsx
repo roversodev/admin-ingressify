@@ -1,3 +1,5 @@
+'use server';
+
 import { Resend } from 'resend';
 import { 
   Body, 
@@ -13,8 +15,6 @@ import {
   Section, 
   Text, 
 } from '@react-email/components';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 const baseUrl = 'https://ingressify.com.br';
 
@@ -258,6 +258,8 @@ export async function sendPixPaymentEmail({
   qrCodeImageUrl: string;
   pixExpiresAt: string;
 }) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
   try {
     await resend.emails.send({
       from: 'Ingressify <pix@ingressify.com.br>',
