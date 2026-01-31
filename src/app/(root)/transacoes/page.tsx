@@ -92,19 +92,60 @@ export default function TransacoesPage() {
             toast.info("Transação aprovada no MP. Criando ingressos...");
 
             // 2. Criar ingressos (idempotente)
-            const transaction = await getByTransactionIdMutation({ transactionId: reprocessTransactionId });
+            let transaction = await getByTransactionIdMutation({ transactionId: reprocessTransactionId });
             
             if (!transaction) {
-                toast.error("Transação não encontrada no banco de dados.");
-                setIsReprocessing(false);
-                return;
+                // Se a transação não existir no banco, tentar criar com os dados do MP
+                console.log("Transação não encontrada no banco. Tentando criar com dados do MP...");
+                
+                const paymentData = mpResult.paymentData;
+                const metadata = paymentData.metadata || {};
+                
+                // Verificar se temos os dados mínimos necessários (eventId e userId)
+                // O MP converte chaves para snake_case (eventId -> event_id)
+                const eventId = metadata.event_id || metadata.eventId;
+                const userId = metadata.user_id || metadata.userId;
+                
+                if (!eventId || !userId) {
+                    toast.error("Transação não encontrada e metadados do MP incompletos (missing event_id/user_id).");
+                    setIsReprocessing(false);
+                    return;
+                }
+
+                try {
+                    // Criar a transação
+                    await createTransactionMutation({
+                        transactionId: reprocessTransactionId,
+                        eventId: eventId as Id<"events">,
+                        userId: userId,
+                        customerId: paymentData.payer?.email || "unknown",
+                        amount: paymentData.transaction_amount,
+                        status: paymentData.status,
+                        paymentMethod: paymentData.payment_method_id || "unknown",
+                        metadata: metadata
+                    });
+                    
+                    toast.success("Transação recuperada e criada no banco!");
+                    
+                    // Buscar a transação recém-criada
+                    transaction = await getByTransactionIdMutation({ transactionId: reprocessTransactionId });
+                    
+                    if (!transaction) {
+                         throw new Error("Falha ao recuperar transação após criação.");
+                    }
+                } catch (err: any) {
+                    console.error("Erro ao criar transação recuperada:", err);
+                    toast.error(`Erro ao recuperar transação: ${err.message}`);
+                    setIsReprocessing(false);
+                    return;
+                }
             }
 
             const createResult = await createTicketsFromTransaction({
                 transactionId: reprocessTransactionId,
-                customerName: transaction.metadata?.name || transaction.metadata?.customerName,
-                customerEmail: transaction.metadata?.email || transaction.metadata?.customerEmail,
-                customerCpf: transaction.metadata?.cpf || transaction.metadata?.customerCpf,
+                customerName: transaction.metadata?.name || transaction.metadata?.customerName || transaction.metadata?.customer_name,
+                customerEmail: transaction.metadata?.email || transaction.metadata?.customerEmail || transaction.metadata?.customer_email,
+                customerCpf: transaction.metadata?.cpf || transaction.metadata?.customerCpf || transaction.metadata?.customer_cpf,
             });
 
             if (!createResult.success) {
@@ -249,6 +290,7 @@ export default function TransacoesPage() {
 
     // Mutações para buscar transações e tickets
     const getByTransactionIdMutation = useMutation(api.admin.getByTransactionIdMutation);
+    const createTransactionMutation = useMutation(api.transactions.create);
     const getTicketsByTransactionIdMutation = useMutation(api.admin.getTicketsByTransactionIdMutation);
     const getTicketsByEmailMutation = useMutation(api.admin.getTicketsByEmailMutation);
     const getTicketsByCpfMutation = useMutation(api.admin.getTicketsByCpfMutation);
