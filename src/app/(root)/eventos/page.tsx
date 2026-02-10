@@ -52,7 +52,7 @@ function useDebounce(value: string, delay: number) {
 
 // Função para calcular valores corretos de uma transação
 const calculateTransactionAmounts = (transaction: any, eventFeeSettings?: CustomFeeSettings | null) => {
-    const totalAmount = transaction.amount;
+    const totalAmount = transaction.metadata?.baseAmount || transaction.amount;
     const discountAmount = transaction.metadata?.discountAmount || 0;
     const paymentMethod = transaction.paymentMethod === 'pix' ? 'PIX' : 'CARD';
     
