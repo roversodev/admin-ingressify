@@ -85,7 +85,7 @@ const isCardTransactionReleased = (transaction: any): boolean => {
     
     const paidDate = new Date(transaction.paidAt || transaction.createdAt);
     const releaseDate = new Date(paidDate);
-    releaseDate.setDate(releaseDate.getDate() + 15);
+    releaseDate.setDate(releaseDate.getDate());
     
     return new Date() >= releaseDate;
 };
