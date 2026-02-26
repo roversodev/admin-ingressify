@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Building2, Phone, ExternalLink, UserPlus, Users } from "lucide-react"
 import { useStorageUrl } from "@/lib/utils"
-import { TableCell } from "@/components/ui/table"
+import { type GenericId as Id } from "convex/values";
 
 // Tipo para as organizações
 export type Organization = {
@@ -21,7 +21,7 @@ export type Organization = {
 }
 
 function OrganizationNameCell({ org }: { org: Organization }) {
-    const imageUrl = useStorageUrl(org.imageStorageId);
+    const imageUrl = useStorageUrl(org.imageStorageId as Id<"_storage"> | undefined);
 
     return (
         <div className="flex items-center gap-3">
