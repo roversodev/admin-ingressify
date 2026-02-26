@@ -122,7 +122,7 @@ export const columns: ColumnDef<Organization>[] = [
                 <Button
                   size="sm"
                   onClick={handleJoin}
-                  className="bg-[#E8B322] text-black hover:bg-[#D4A017] gap-2"
+                  className="bg-[#E65CFF] text-black hover:bg-[#D4A017] gap-2"
                 >
                   <UserPlus className="h-3 w-3" />
                   Entrar

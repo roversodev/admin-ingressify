@@ -120,7 +120,7 @@ export default function OrganizationsPage() {
                 <CardContent>
                     {!organizationsData ? (
                         <div className="text-center py-8">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E8B322] mx-auto"></div>
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E65CFF] mx-auto"></div>
                             <p className="text-[#A3A3A3] mt-2">Carregando organizações...</p>
                         </div>
                     ) : organizations.length === 0 ? (
@@ -154,7 +154,7 @@ export default function OrganizationsPage() {
                     <div className="mt-4">
                         {!members ? (
                             <div className="flex justify-center py-8">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E8B322]"></div>
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E65CFF]"></div>
                             </div>
                         ) : members.length === 0 ? (
                             <p className="text-center text-zinc-500 py-8">Nenhum membro encontrado.</p>
