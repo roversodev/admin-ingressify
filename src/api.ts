@@ -665,6 +665,17 @@ export type PublicApiType = {
       },
       any
     >;
+    getEventTransactionsPaginated: FunctionReference<
+      "query",
+      "public",
+      {
+        eventId: Id<"events">;
+        limit?: number;
+        offset?: number;
+        userId: string;
+      },
+      any
+    >;
   };
   pendingEmails: {
     create: FunctionReference<
@@ -1296,6 +1307,12 @@ export type PublicApiType = {
       { ticketId: Id<"tickets"> },
       any
     >;
+    getAcceptedTransferForTicket: FunctionReference<
+      "query",
+      "public",
+      { ticketId: Id<"tickets"> },
+      any
+    >;
     getTransferHistoryForTicket: FunctionReference<
       "query",
       "public",
@@ -1460,6 +1477,19 @@ export type PublicApiType = {
       "query",
       "public",
       { email: string },
+      any
+    >;
+    updateValidatorPermissions: FunctionReference<
+      "mutation",
+      "public",
+      {
+        dayIds?: Array<Id<"eventDays">>;
+        eventId: Id<"events">;
+        lotIds?: Array<Id<"ticketLots">>;
+        ticketTypeIds?: Array<Id<"ticketTypes">>;
+        userId: string;
+        validatorId: Id<"ticketValidators">;
+      },
       any
     >;
   };
@@ -1761,7 +1791,20 @@ export type PublicApiType = {
     getAllTransactionsPaginated: FunctionReference<
       "query",
       "public",
-      { eventId?: Id<"events">; limit?: number; page?: number; userId: string },
+      {
+        eventId?: Id<"events">;
+        limit?: number;
+        page?: number;
+        paginationOpts?: {
+          cursor: string | null;
+          endCursor?: string | null;
+          id?: number;
+          maximumBytesRead?: number;
+          maximumRowsRead?: number;
+          numItems: number;
+        };
+        userId: string;
+      },
       any
     >;
     getCreditCardInstallmentStats: FunctionReference<
@@ -1879,6 +1922,18 @@ export type PublicApiType = {
       "query",
       "public",
       Record<string, never>,
+      any
+    >;
+    listAllOrganizations: FunctionReference<
+      "query",
+      "public",
+      { limit?: number; searchTerm?: string; skip?: number; userId: string },
+      any
+    >;
+    addSelfToOrganization: FunctionReference<
+      "mutation",
+      "public",
+      { adminId: string; organizationId: Id<"organizations"> },
       any
     >;
   };
