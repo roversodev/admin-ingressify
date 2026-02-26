@@ -30,6 +30,7 @@ import {
 } from "@remixicon/react";
 import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
+import { Building2 } from "lucide-react";
 
 
 function SidebarLogo() {
@@ -59,7 +60,7 @@ function SidebarLogo() {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useUser();
   const pathname = usePathname();
-  
+
   const data = {
     user: {
       name: user?.fullName || "Vitor Roverso",
@@ -84,6 +85,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             title: "Usuários",
             url: "/usuarios",
             icon: RiShieldUserLine,
+          },
+          {
+            title: "Organizações",
+            url: "/organizacoes",
+            icon: Building2,
+            permission: "manage_finances",
           },
           {
             title: "Representantes",
@@ -139,10 +146,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <SidebarMenu>
                 {item.items.map((item) => {
                   // Verifica se o item está ativo com base na URL atual
-                  const isActive = 
-                    (item.url === "/" && pathname === "/") || 
+                  const isActive =
+                    (item.url === "/" && pathname === "/") ||
                     (item.url !== "/" && pathname.startsWith(item.url));
-                  
+
                   return (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
