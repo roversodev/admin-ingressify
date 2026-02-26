@@ -85,7 +85,7 @@ export const columns: ColumnDef<Organization>[] = [
       const org = row.original
       
       const handleAccess = () => {
-        window.open(`https://www.slticket.com/seller?org=${org._id}`, '_blank');
+        window.open(`https://www.ingressify.com.br/seller?org=${org._id}`, '_blank');
       }
 
       const handleJoin = () => {
