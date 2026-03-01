@@ -3,7 +3,23 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Building2, Phone, ExternalLink, UserPlus, Users, Trash2 } from "lucide-react"
+import { 
+  Building2, 
+  Phone, 
+  ExternalLink, 
+  UserPlus, 
+  Users, 
+  Trash2, 
+  MoreHorizontal 
+} from "lucide-react"
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu"
 import { useStorageUrl } from "@/lib/utils"
 import { type GenericId as Id } from "convex/values";
 
@@ -101,48 +117,60 @@ export const columns: ColumnDef<Organization>[] = [
       }
 
       return (
-        <div className="flex gap-2">
-            <Button
-                variant="outline"
-                size="sm"
-                onClick={handleViewMembers}
-                className="border-zinc-700 text-white hover:bg-zinc-800 gap-2"
-            >
-                <Users className="h-3 w-3" />
-                Membros
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0 text-white hover:bg-zinc-800">
+              <span className="sr-only">Abrir menu</span>
+              <MoreHorizontal className="h-4 w-4" />
             </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800 text-white">
+            <DropdownMenuLabel>Ações</DropdownMenuLabel>
+            <DropdownMenuItem 
+              onClick={() => navigator.clipboard.writeText(org._id)}
+              className="hover:bg-zinc-800 cursor-pointer focus:bg-zinc-800 focus:text-white"
+            >
+              Copiar ID
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-zinc-800" />
             
-            {org.isMember ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAccess}
-                  className="border-zinc-700 text-white hover:bg-zinc-800 gap-2"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  Acessar
-                </Button>
-            ) : (
-                <Button
-                  size="sm"
-                  onClick={handleJoin}
-                  className="bg-[#E65CFF] text-black hover:bg-[#D4A017] gap-2"
-                >
-                  <UserPlus className="h-3 w-3" />
-                  Entrar
-                </Button>
-            )}
-
-            <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDelete}
-                className="border-red-900/50 text-red-500 hover:bg-red-900/20 hover:text-red-400 gap-2"
+            <DropdownMenuItem 
+              onClick={handleViewMembers}
+              className="hover:bg-zinc-800 cursor-pointer focus:bg-zinc-800 focus:text-white"
             >
-                <Trash2 className="h-3 w-3" />
-                Excluir
-            </Button>
-        </div>
+              <Users className="mr-2 h-4 w-4" />
+              Ver Membros
+            </DropdownMenuItem>
+
+            {org.isMember ? (
+              <DropdownMenuItem 
+                onClick={handleAccess}
+                className="hover:bg-zinc-800 cursor-pointer focus:bg-zinc-800 focus:text-white"
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Acessar Painel
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem 
+                onClick={handleJoin}
+                className="hover:bg-zinc-800 cursor-pointer focus:bg-zinc-800 focus:text-white"
+              >
+                <UserPlus className="mr-2 h-4 w-4" />
+                Entrar na Organização
+              </DropdownMenuItem>
+            )}
+            
+            <DropdownMenuSeparator className="bg-zinc-800" />
+            
+            <DropdownMenuItem 
+              onClick={handleDelete}
+              className="text-red-500 hover:bg-red-900/20 hover:text-red-400 cursor-pointer focus:bg-red-900/20 focus:text-red-400"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Excluir Organização
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       )
     }
   }
