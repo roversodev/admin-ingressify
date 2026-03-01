@@ -105,15 +105,23 @@ export const columns: ColumnDef<Organization>[] = [
       }
 
       const handleJoin = () => {
-        document.dispatchEvent(new CustomEvent('join-organization', { detail: { id: org._id, name: org.name } }))
+        // Usar setTimeout para garantir que o DropdownMenu feche antes de abrir o Dialog
+        // Isso evita o problema de 'pointer-events: none' travando o body
+        setTimeout(() => {
+          document.dispatchEvent(new CustomEvent('join-organization', { detail: { id: org._id, name: org.name } }))
+        }, 100);
       }
 
       const handleViewMembers = () => {
-        document.dispatchEvent(new CustomEvent('view-organization-members', { detail: org._id }))
+        setTimeout(() => {
+          document.dispatchEvent(new CustomEvent('view-organization-members', { detail: org._id }))
+        }, 100);
       }
 
       const handleDelete = () => {
-        document.dispatchEvent(new CustomEvent('delete-organization', { detail: { id: org._id, name: org.name } }))
+        setTimeout(() => {
+          document.dispatchEvent(new CustomEvent('delete-organization', { detail: { id: org._id, name: org.name } }))
+        }, 100);
       }
 
       return (
