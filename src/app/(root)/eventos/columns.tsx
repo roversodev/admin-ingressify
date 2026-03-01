@@ -147,7 +147,7 @@ export const columns: ColumnDef<EventWithStats>[] = [
             onClick={() => document.dispatchEvent(new CustomEvent('view-event-details', { detail: event }))}
             className="border-zinc-700 text-white hover:bg-zinc-800"
         >
-            <Eye className="h-4 w-4 mr-1" />
+            <Eye className="h-4 w-4" />
         </Button>
       )
     }
