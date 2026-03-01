@@ -1936,6 +1936,29 @@ export type PublicApiType = {
       { adminId: string; organizationId: Id<"organizations"> },
       any
     >;
+    removeOrganizationMember: FunctionReference<
+      "mutation",
+      "public",
+      { adminId: string; organizationId: Id<"organizations">; userId: string },
+      any
+    >;
+    updateOrganizationMemberRole: FunctionReference<
+      "mutation",
+      "public",
+      {
+        adminId: string;
+        newRole: "owner" | "admin" | "staff";
+        organizationId: Id<"organizations">;
+        userId: string;
+      },
+      any
+    >;
+    deleteOrganization: FunctionReference<
+      "mutation",
+      "public",
+      { adminId: string; organizationId: Id<"organizations"> },
+      any
+    >;
   };
   customers: {
     create: FunctionReference<

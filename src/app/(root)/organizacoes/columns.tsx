@@ -3,7 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Building2, Phone, ExternalLink, UserPlus, Users } from "lucide-react"
+import { Building2, Phone, ExternalLink, UserPlus, Users, Trash2 } from "lucide-react"
 import { useStorageUrl } from "@/lib/utils"
 import { type GenericId as Id } from "convex/values";
 
@@ -96,6 +96,10 @@ export const columns: ColumnDef<Organization>[] = [
         document.dispatchEvent(new CustomEvent('view-organization-members', { detail: org._id }))
       }
 
+      const handleDelete = () => {
+        document.dispatchEvent(new CustomEvent('delete-organization', { detail: { id: org._id, name: org.name } }))
+      }
+
       return (
         <div className="flex gap-2">
             <Button
@@ -128,6 +132,16 @@ export const columns: ColumnDef<Organization>[] = [
                   Entrar
                 </Button>
             )}
+
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDelete}
+                className="border-red-900/50 text-red-500 hover:bg-red-900/20 hover:text-red-400 gap-2"
+            >
+                <Trash2 className="h-3 w-3" />
+                Excluir
+            </Button>
         </div>
       )
     }
