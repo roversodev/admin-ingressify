@@ -1251,6 +1251,28 @@ export type PublicApiType = {
       { netReceivedAmount: number; transactionId: string },
       any
     >;
+    upsertAbandonedCart: FunctionReference<
+      "mutation",
+      "public",
+      {
+        customerCpf?: string;
+        customerEmail?: string;
+        customerName?: string;
+        customerPhone?: string;
+        eventId: Id<"events">;
+        step: string;
+        ticketSelections: any;
+        totalAmount: number;
+        userId?: string;
+      },
+      any
+    >;
+    markCartAsRecovered: FunctionReference<
+      "mutation",
+      "public",
+      { customerEmail: string; eventId: Id<"events">; transactionId: string },
+      any
+    >;
   };
   transfers: {
     createTransferRequest: FunctionReference<
@@ -1957,6 +1979,18 @@ export type PublicApiType = {
       "mutation",
       "public",
       { adminId: string; organizationId: Id<"organizations"> },
+      any
+    >;
+    getEventsPageData: FunctionReference<
+      "query",
+      "public",
+      { limit?: number; searchTerm?: string; skip?: number; userId: string },
+      any
+    >;
+    getGlobalEventStats: FunctionReference<
+      "query",
+      "public",
+      { userId: string },
       any
     >;
   };
