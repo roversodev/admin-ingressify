@@ -458,7 +458,7 @@ export default function OrganizationsPage() {
                         </Button>
                         <Button 
                             onClick={confirmChangeRole}
-                            className="bg-[#E65CFF] text-black hover:bg-[#D4A017]"
+                            className="bg-[#E65CFF] text-black hover:bg-[#E65CFF]/80"
                         >
                             Salvar Alterações
                         </Button>
@@ -576,7 +576,7 @@ export default function OrganizationsPage() {
                         </Button>
                         <Button 
                             onClick={confirmChangeRole}
-                            className="bg-[#E65CFF] text-black hover:bg-[#D4A017]"
+                            className="bg-[#E65CFF] text-black hover:bg-[#E65CFF]/80"
                         >
                             Salvar Alterações
                         </Button>
