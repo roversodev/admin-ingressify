@@ -148,7 +148,6 @@ export const columns: ColumnDef<EventWithStats>[] = [
             className="border-zinc-700 text-white hover:bg-zinc-800"
         >
             <Eye className="h-4 w-4 mr-1" />
-            Ver Detalhes
         </Button>
       )
     }

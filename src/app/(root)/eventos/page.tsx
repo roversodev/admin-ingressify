@@ -186,69 +186,6 @@ export default function EventsPage() {
                         </p>
                     </CardContent>
                 </Card>
-
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-white">PIX Disponível</CardTitle>
-                        <div className="h-8 w-8 rounded-full bg-zinc-800 flex items-center justify-center">
-                            <Smartphone className="h-4 w-4 text-[#E65CFF]" />
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-green-400">
-                            {!globalStats ? (
-                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#E65CFF]"></div>
-                            ) : (
-                                formatCurrency(globalStats.totalPixAvailable)
-                            )}
-                        </div>
-                        <p className="text-xs text-[#A3A3A3]">
-                            Liberado imediatamente
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-white">Cartão Disponível</CardTitle>
-                        <div className="h-8 w-8 rounded-full bg-zinc-800 flex items-center justify-center">
-                            <CreditCard className="h-4 w-4 text-[#E65CFF]" />
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-green-400">
-                            {!globalStats ? (
-                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#E65CFF]"></div>
-                            ) : (
-                                formatCurrency(globalStats.totalCardAvailable)
-                            )}
-                        </div>
-                        <p className="text-xs text-[#A3A3A3]">
-                            Liberado imediatamente
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-white">Faturamento Bruto</CardTitle>
-                        <div className="h-8 w-8 rounded-full bg-zinc-800 flex items-center justify-center">
-                            <DollarSign className="h-4 w-4 text-[#E65CFF]" />
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-white">
-                            {!globalStats ? (
-                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#E65CFF]"></div>
-                            ) : (
-                                formatCurrency(globalStats.totalRevenue)
-                            )}
-                        </div>
-                        <p className="text-xs text-[#A3A3A3]">
-                            Receita total da plataforma
-                        </p>
-                    </CardContent>
-                </Card>
             </div>
 
             {/* Filtros e Tabela */}
